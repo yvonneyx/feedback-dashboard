@@ -4,8 +4,8 @@ export async function POST(request: Request) {
   try {
     const { objectId, resolved } = await request.json();
 
-    const appId = process.env.LEANCLOUD_APP_ID;
-    const appKey = process.env.LEANCLOUD_APP_KEY;
+    const appId = 'mAckVaWaCleA1L1tRu0vDkkl-gzGzoHsz';
+    const appKey = '5BCFPGawWnS37eHVnzSptNa5';
 
     if (!objectId) {
       return NextResponse.json({ error: '缺少对象ID' }, { status: 400 });

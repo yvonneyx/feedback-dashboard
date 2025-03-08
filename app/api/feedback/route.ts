@@ -4,8 +4,8 @@ export async function POST(request: Request) {
   try {
     const { startDate, endDate, repo } = await request.json();
 
-    const appId = process.env.LEANCLOUD_APP_ID;
-    const appKey = process.env.LEANCLOUD_APP_KEY;
+    const appId = 'mAckVaWaCleA1L1tRu0vDkkl-gzGzoHsz';
+    const appKey = '5BCFPGawWnS37eHVnzSptNa5';
 
     // 在使用前检查是否存在
     if (!appId || !appKey) {
