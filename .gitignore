@@ -43,3 +43,6 @@ next-env.d.ts
 # ide
 .lh
 .history
+
+# 环境变量文件
+.env*.local

@@ -1,0 +1,534 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 引入 Ant Design 样式 */
+@import '~antd/dist/reset.css';
+
+/* 自定义 Ant Design 组件以匹配现有设计 */
+.ant-btn-primary {
+  background-color: #4f46e5;
+}
+
+.ant-picker {
+  border-radius: 0.75rem;
+  border-color: #e5e7eb;
+}
+
+.ant-picker:hover {
+  border-color: #4f46e5;
+}
+
+.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #4f46e5;
+}
+
+.ant-tabs-ink-bar {
+  background: #4f46e5;
+}
+
+/* 自定义 Tag.CheckableTag 样式 */
+.ant-tag-checkable {
+  transition: all 0.3s ease;
+}
+
+.ant-tag-checkable:hover {
+  transform: translateY(-1px);
+}
+
+.ant-tag-checkable-checked {
+  background: linear-gradient(to right, #eef2ff, #e0e7ff) !important;
+}
+
+/* 改进 DateRangePicker 样式使其与技术栈筛选器匹配 */
+.ant-picker {
+  background-color: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+/* 通用 Ant Design 组件增强 */
+.ant-btn,
+.ant-input,
+.ant-select,
+.ant-select-selector,
+.ant-tabs-tab,
+.ant-table-container,
+.ant-table,
+.ant-pagination-item,
+.ant-alert,
+.ant-dropdown-menu {
+  border-radius: 0.75rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 表格增强 */
+.custom-table .ant-table {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.custom-table .ant-table-container {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid rgba(229, 231, 235, 0.5);
+}
+
+.custom-table .ant-table-thead > tr > th {
+  background: linear-gradient(to right, rgba(249, 250, 251, 0.8), rgba(243, 244, 246, 0.8));
+  padding: 14px 16px;
+  font-weight: 600;
+  color: #4b5563;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+}
+
+.custom-table .ant-table-tbody > tr > td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.3);
+}
+
+.custom-table .ant-table-tbody > tr:hover > td {
+  background-color: rgba(243, 244, 246, 0.7) !important;
+}
+
+.custom-table .ant-table-pagination {
+  margin: 16px !important;
+}
+
+/* 标签增强 */
+.ant-tag {
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  margin-right: 4px;
+}
+
+.ant-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* 选项卡增强 */
+.custom-tabs .ant-tabs-nav {
+  margin-bottom: 0;
+}
+
+.custom-tabs .ant-tabs-nav::before {
+  border-bottom: 1px solid rgba(229, 231, 235, 0.4);
+}
+
+.custom-tabs .ant-tabs-tab {
+  padding: 12px 18px;
+  margin: 0 8px 0 0;
+  transition: all 0.2s ease;
+}
+
+.custom-tabs .ant-tabs-tab:hover {
+  color: #4f46e5;
+}
+
+.custom-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #4338ca;
+  font-weight: 500;
+}
+
+.custom-tabs .ant-tabs-ink-bar {
+  background: linear-gradient(to right, #4f46e5, #6366f1);
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
+/* 弹出提示增强 */
+.ant-tooltip-inner {
+  border-radius: 1rem;
+  padding: 8px 12px;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.05),
+    0 4px 6px -4px rgba(0, 0, 0, 0.05);
+}
+
+/* 分页增强 */
+.ant-pagination-item {
+  border-radius: 0.5rem;
+  transition: all 0.15s ease;
+}
+
+.ant-pagination-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ant-pagination-item-active {
+  background: linear-gradient(to right, #4f46e5, #6366f1);
+  border-color: #4f46e5;
+}
+
+.ant-pagination-item-active a {
+  color: white !important;
+}
+
+/* 下拉菜单增强 */
+.ant-dropdown-menu {
+  padding: 8px;
+  border-radius: 1rem !important;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+}
+
+.ant-dropdown-menu-item {
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  padding: 8px 12px;
+}
+
+.ant-dropdown-menu-item:hover {
+  background: rgba(243, 244, 246, 0.8);
+}
+
+/* 统计卡片样式增强 */
+.ant-statistic-title {
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.ant-statistic-content {
+  font-size: 2rem;
+}
+
+.ant-card {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.ant-card-body {
+  padding: 20px;
+}
+
+/* 嵌套选项卡样式 */
+.ant-tabs .ant-tabs {
+  margin-top: -16px;
+}
+
+/* 警告提示样式 */
+.ant-alert {
+  border-radius: 0.75rem;
+}
+
+.ant-alert-info {
+  background-color: rgba(239, 246, 255, 0.6);
+  border-color: rgba(147, 197, 253, 0.4);
+}
+
+/* 按钮悬停动画 */
+.ant-btn {
+  transition: all 0.3s;
+}
+
+.ant-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* 增强卡片效果 */
+.ant-card {
+  border-radius: 1rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.05),
+    0 4px 6px -4px rgba(0, 0, 0, 0.02);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.ant-card:hover {
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.08),
+    0 8px 10px -6px rgba(0, 0, 0, 0.03);
+}
+
+/* 加强统计数字效果 */
+.ant-statistic-content-value {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  letter-spacing: -0.02em;
+}
+
+/* 美化卡片标签页 */
+.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+  border-radius: 1rem 1rem 0 0 !important;
+  padding: 8px 16px;
+  margin-right: 4px;
+  transition: all 0.3s;
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
+  background: white;
+  border-bottom-color: white;
+}
+
+/* 表格美化 */
+.custom-table .ant-table {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.custom-table .ant-table-thead > tr > th {
+  background: linear-gradient(to right, rgba(249, 250, 251, 0.95), rgba(243, 244, 246, 0.95));
+  font-weight: 600;
+  padding: 16px;
+  letter-spacing: 0.02em;
+}
+
+.custom-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid rgba(229, 231, 235, 0.4);
+  padding: 16px;
+}
+
+.custom-table .ant-table-tbody > tr:hover > td {
+  background: rgba(237, 242, 247, 0.7) !important;
+}
+
+/* 美化 Badge 计数 */
+.ant-badge-count {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+}
+
+/* 动画效果 */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+/* 微妙的脉动效果 */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 基准对比样式 */
+.baseline-bar {
+  height: 6px;
+  border-radius: 3px;
+  background-color: #f3f4f6;
+  position: relative;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.baseline-indicator {
+  position: absolute;
+  width: 2px;
+  height: 6px;
+  background-color: #6b7280;
+  z-index: 1;
+}
+
+.baseline-progress {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease;
+}
+
+.baseline-good {
+  background: linear-gradient(to right, #10b981, #34d399);
+}
+
+.baseline-warning {
+  background: linear-gradient(to right, #f59e0b, #fbbf24);
+}
+
+.baseline-bad {
+  background: linear-gradient(to right, #ef4444, #f87171);
+}
+
+/* 动画效果加强 */
+.stat-card-hover:hover .stat-icon {
+  transform: scale(1.1) rotate(5deg);
+  opacity: 0.2;
+}
+
+/* 平滑过渡 */
+.smooth-transition {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 优化指标卡片样式 */
+.indicator-card {
+  position: relative;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.indicator-card:hover .stat-icon {
+  transform: scale(1.2) rotate(5deg);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 渐变进度条 */
+.progress-gradient-blue {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6, #1d4ed8);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+.progress-gradient-teal {
+  background: linear-gradient(90deg, #5eead4, #14b8a6, #0d9488);
+  box-shadow: 0 0 10px rgba(20, 184, 166, 0.3);
+}
+
+.progress-gradient-violet {
+  background: linear-gradient(90deg, #c4b5fd, #8b5cf6, #7c3aed);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+}
+
+.progress-gradient-amber {
+  background: linear-gradient(90deg, #fcd34d, #f59e0b, #d97706);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+/* 悬停效果增强 */
+.indicator-card:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* 卡片背景微妙动画 */
+@keyframes subtle-move {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.indicator-card::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.5s ease;
+}
+
+.indicator-card:hover::before {
+  opacity: 0.3;
+  animation: subtle-move 8s ease-in-out infinite;
+}
+
+/* 统一圆角半径和间距 */
+:root {
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+}
+
+/* 统一组件圆角 */
+.ant-btn,
+.ant-input,
+.ant-select,
+.ant-select-selector,
+.ant-tabs-tab,
+.ant-pagination-item,
+.ant-alert,
+.ant-dropdown-menu,
+.ant-picker {
+  border-radius: var(--radius-md) !important;
+}
+
+.ant-card {
+  border-radius: var(--radius-lg);
+}
+
+.indicator-card {
+  border-radius: var(--radius-lg);
+}
+
+.custom-table .ant-table {
+  border-radius: var(--radius-lg);
+}
+
+.custom-table .ant-table-container {
+  border-radius: var(--radius-md);
+}
+
+/* 调整间距 */
+.ant-card-body {
+  padding: var(--space-4);
+}
+
+.ant-tabs-tab {
+  padding: var(--space-2) var(--space-3) !important;
+}
+
+.ant-table-thead > tr > th {
+  padding: var(--space-3) var(--space-4) !important;
+}
+
+.ant-table-tbody > tr > td {
+  padding: var(--space-3) var(--space-4) !important;
+}
+
+/* 精细化阴影 */
+.shadow-sm {
+  box-shadow:
+    0 1px 2px 0 rgba(0, 0, 0, 0.03),
+    0 1px 6px -1px rgba(0, 0, 0, 0.02) !important;
+}
+
+.shadow-md {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.04),
+    0 2px 4px -2px rgba(0, 0, 0, 0.02) !important;
+}
+
+.shadow-lg {
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.04),
+    0 4px 6px -4px rgba(0, 0, 0, 0.02) !important;
+}

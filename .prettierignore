@@ -1,0 +1,22 @@
+# 构建输出
+.next
+node_modules
+build
+out
+dist
+
+# 缓存
+.cache
+.vercel
+.output
+
+# 依赖
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 杂项
+.git
+.github
+*.log
+*.svg 

@@ -1,0 +1,17 @@
+# 构建输出
+.next
+build
+out
+dist
+
+# 第三方库和依赖
+node_modules
+public
+
+# 配置文件
+next.config.js
+postcss.config.js
+tailwind.config.js
+
+# 类型定义
+next-env.d.ts 

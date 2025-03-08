@@ -1,4 +1,5 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
   --background: #ffffff;
@@ -22,5 +23,120 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* 为进度条设置动画效果 */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.pulse-badge::after {
+  content: '';
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+  background: inherit;
+  z-index: -1;
+}
+
+/* 自定义标签页样式 */
+.custom-tabs .ant-tabs-tab {
+  border-radius: 0.5rem 0.5rem 0 0 !important;
+  margin-right: 4px !important;
+  padding: 6px 16px !important;
+  transition: all 0.3s ease;
+  border: 1px solid transparent !important;
+}
+
+.custom-tabs .ant-tabs-tab-active {
+  background: white !important;
+  border-bottom-color: white !important;
+  border-top-color: #e2e8f0 !important;
+  border-left-color: #e2e8f0 !important;
+  border-right-color: #e2e8f0 !important;
+}
+
+.custom-tabs .ant-tabs-tab:not(.ant-tabs-tab-active):hover {
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+.custom-tabs .ant-tabs-nav::before {
+  border-bottom: none !important;
+}
+
+.data-tabs .ant-tabs-content-holder {
+  background: white;
+}
+
+/* 自定义卡片悬停效果 */
+.ant-card {
+  transition: all 0.3s ease-in-out;
+}
+
+/* 进度条动画 */
+.progress-animation {
+  animation: progress-grow 1.5s ease-out forwards;
+}
+
+@keyframes progress-grow {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 表格美化 */
+.ant-table-thead > tr > th {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+}
+
+.ant-table-tbody > tr > td {
+  font-size: 0.85rem !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background-color: #f1f5f9 !important;
+}
+
+/* 统计数据卡片 */
+.ant-statistic-title {
+  margin-bottom: 8px !important;
+}
+
+.ant-statistic-content {
+  font-family: 'Inter', system-ui, sans-serif !important;
 }

@@ -1,0 +1,12 @@
+name: Build and Deploy
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Use token in workflow
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+        run: echo "使用令牌进行一些操作" 

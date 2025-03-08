@@ -1,0 +1,28 @@
+name: Deploy Application
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build application
+        env:
+          # 在构建时注入环境变量
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+        run: npm run build
+        
+      - name: Deploy
+        # 部署步骤 (取决于你的部署平台) 
