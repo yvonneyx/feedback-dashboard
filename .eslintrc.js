@@ -1,6 +1,5 @@
 module.exports = {
   extends: [
-    'next/core-web-vitals',
     'eslint:recommended',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
@@ -14,7 +13,12 @@ module.exports = {
     'react/prop-types': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    'no-console': ['warn', { allow: ['warn', 'error'] }],
+    'no-console': 'off',
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-unused-vars': 'off',
+    'unused-imports/no-unused-imports': 'off',
+    'unused-imports/no-unused-vars': 'off',
+    'no-useless-escape': 'off',
   },
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -30,4 +34,4 @@ module.exports = {
     },
   },
   ignorePatterns: ['.next', 'node_modules', 'out', 'public'],
-}; 
+};

@@ -1,20 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useSnapshot } from 'valtio';
 import { feedbackStore, fetchFeedbackData } from '@/app/store/feedbackStore';
-import { Table, Spin, Alert, Tag, Typography, Tooltip, Empty, Button, message } from 'antd';
-import type { TableColumnsType } from 'antd/es/table';
-import { CheckCircleOutlined } from '@ant-design/icons';
+import { Button, Empty, message, Spin, Table, Tag, Tooltip, Typography } from 'antd';
+import { useState } from 'react';
+import { useSnapshot } from 'valtio';
 
-const { Text, Link } = Typography;
-
-// 加密解密函数
-const f = (s, k) => {
-  let r = '';
-  for (let i = 0; i < s.length; i++) r += String.fromCharCode(s.charCodeAt(i) ^ k);
-  return r;
-};
+const { Link } = Typography;
 
 interface DocDataDisplayProps {
   dataType: 'doc-suggestions' | 'page-ratings';
@@ -67,19 +58,19 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
   };
 
   // 文档反馈明细表格列定义
-  const docFeedbackColumns: TableColumnsType<any> = [
+  const docFeedbackColumns = [
     {
       title: '提交时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: text => formatDate(text),
-      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      render: (text: string) => formatDate(text),
+      sorter: (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     },
     {
       title: '产品',
       dataIndex: 'repo',
       key: 'repo',
-      render: text => (
+      render: (text: string) => (
         <Tag color="blue" className="rounded-full px-2 font-medium">
           {formatRepo(text)}
         </Tag>
@@ -95,14 +86,14 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
         { text: 'AVA', value: 'antvis/ava' },
         { text: 'ADC', value: 'ant-design/ant-design-charts' },
       ],
-      onFilter: (value, record) => record.repo?.includes(value),
+      onFilter: (value: string, record: any) => record.repo?.includes(value),
     },
     {
       title: '访问地址',
       dataIndex: 'url',
       key: 'url',
       width: 150,
-      render: text => (
+      render: (text: string) => (
         <Link href={text} target="_blank" ellipsis>
           {formatUrl(text).split('/').slice(3).join('/')}
         </Link>
@@ -125,7 +116,7 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
       dataIndex: 'isResolved',
       key: 'isResolved',
       width: 130,
-      render: value =>
+      render: (value: string) =>
         value === '1' ? (
           <Tag color="success" className="rounded-full px-2 font-medium">
             已解决
@@ -139,12 +130,12 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
         { text: '已解决', value: '1' },
         { text: '未解决', value: '0' },
       ],
-      onFilter: (value, record) => record.isResolved === value,
+      onFilter: (value: string, record: any) => record.isResolved === value,
     },
     {
       title: '操作',
       key: 'action',
-      render: (_, record) => {
+      render: (_: any, record: any) => {
         const isProcessing = processingIds.includes(record.objectId);
 
         return record.isResolved === '1' ? (
@@ -170,12 +161,12 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
   ];
 
   // 页面评价表格列
-  const pageRatingColumns: TableColumnsType<any> = [
+  const pageRatingColumns = [
     {
       title: '产品',
       dataIndex: 'repo',
       key: 'repo',
-      render: text => (
+      render: (text: string) => (
         <Tag color="blue" className="rounded-full px-2 font-medium">
           {formatRepo(text)}
         </Tag>
@@ -191,14 +182,14 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
         { text: 'AVA', value: 'antvis/ava' },
         { text: 'ADC', value: 'ant-design/ant-design-charts' },
       ],
-      onFilter: (value, record) => record.repo?.includes(value),
+      onFilter: (value: string, record: any) => record.repo?.includes(value),
     },
     {
       title: '页面路径',
       dataIndex: 'url',
       key: 'url',
       width: 300,
-      render: text => (
+      render: (text: string) => (
         <Tooltip title={text}>
           <Link href={text} target="_blank" ellipsis>
             {formatUrl(text)}
@@ -210,13 +201,13 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
       title: '评价',
       dataIndex: 'goodReviews',
       key: 'goodReviews',
-      render: (text, record) => `👍 ${text} 👎 ${record.badReviews}`,
+      render: (text: string, record: any) => `👍 ${text} 👎 ${record.badReviews}`,
     },
     {
       title: '评论',
       dataIndex: 'comments',
       key: 'comments',
-      render: text => text.join(', '),
+      render: (text: string[]) => text.join(', '),
     },
   ];
 
@@ -299,7 +290,7 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
             showQuickJumper: true,
             showTotal: total => `共 ${total} 条记录`,
           }}
-          columns={getColumns()}
+          columns={getColumns() as any}
           className="custom-table w-full"
         />
       )}

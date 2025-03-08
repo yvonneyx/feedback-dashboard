@@ -1,5 +1,5 @@
-import { proxy } from 'valtio';
 import dayjs from 'dayjs';
+import { proxy } from 'valtio';
 
 // 定义全局状态
 interface FeedbackState {
@@ -162,16 +162,4 @@ async function fetchProductData(repo: string) {
     feedbackStore.productResponseTimes[repo] = [];
     return [];
   }
-}
-
-// 计算平均响应时间
-function calculateAverageResponseTime(issues: any[]) {
-  const respondedIssues = issues.filter(issue => issue.responseTimeInHours !== null);
-  if (respondedIssues.length === 0) return null;
-
-  const totalResponseTime = respondedIssues.reduce(
-    (sum, issue) => sum + issue.responseTimeInHours,
-    0
-  );
-  return Math.round((totalResponseTime / respondedIssues.length) * 10) / 10; // 保留一位小数
 }

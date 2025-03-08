@@ -21,7 +21,7 @@ export async function POST(request: Request) {
         'X-LC-Id': appId,
         'X-LC-Key': appKey,
         'Content-Type': 'application/json',
-      },
+      } as HeadersInit,
       body: JSON.stringify(data),
     });
 

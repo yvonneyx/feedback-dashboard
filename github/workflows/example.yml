@@ -9,4 +9,4 @@ jobs:
       - name: Use token in workflow
         env:
           API_TOKEN: ${{ secrets.API_TOKEN }}
-        run: echo "使用令牌进行一些操作" 
+        run: echo "使用令牌进行一些操作"

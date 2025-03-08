@@ -1,10 +1,9 @@
 'use client';
 
-import React from 'react';
-import { Card, Tabs, Badge } from 'antd';
-import DocDataDisplay from './DocDataDisplay';
+import { Badge, Card, Tabs } from 'antd';
 import { useSnapshot } from 'valtio';
 import { feedbackStore } from '../store/feedbackStore';
+import DocDataDisplay from './DocDataDisplay';
 
 export default function DocDetails() {
   const { data } = useSnapshot(feedbackStore);

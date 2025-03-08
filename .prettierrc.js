@@ -1,4 +1,8 @@
 module.exports = {
+  plugins: [
+    require.resolve('prettier-plugin-organize-imports'),
+    require.resolve('prettier-plugin-packagejson'),
+  ],
   semi: true,
   singleQuote: true,
   printWidth: 100,
@@ -15,4 +19,4 @@ module.exports = {
       },
     },
   ],
-}; 
+};

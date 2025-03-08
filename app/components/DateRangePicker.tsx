@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { DatePicker, Space } from 'antd';
+import { feedbackStore, fetchFeedbackData, updateDateRange } from '@/app/store/feedbackStore';
 import type { TimeRangePickerProps } from 'antd';
-import dayjs from 'dayjs';
+import { DatePicker } from 'antd';
 import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { useSnapshot } from 'valtio';
-import { feedbackStore, updateDateRange, fetchFeedbackData } from '@/app/store/feedbackStore';
 
 const { RangePicker } = DatePicker;
 
@@ -30,7 +29,7 @@ export default function DateRangePicker() {
   ];
 
   // 处理日期范围变化
-  const onRangeChange = (dates: null | (Dayjs | null)[], dateStrings: string[]) => {
+  const onRangeChange = (dates: null | (Dayjs | null)[]) => {
     if (dates && dates[0] && dates[1]) {
       updateDateRange(dates[0].toISOString(), dates[1].toISOString());
       fetchFeedbackData();

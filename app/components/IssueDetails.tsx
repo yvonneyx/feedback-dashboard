@@ -1,10 +1,9 @@
 'use client';
 
-import React from 'react';
-import { useSnapshot } from 'valtio';
-import { Card, Tabs, Badge, Button } from 'antd';
-import { LineChartOutlined } from '@ant-design/icons';
 import { feedbackStore } from '@/app/store/feedbackStore';
+import { LineChartOutlined } from '@ant-design/icons';
+import { Badge, Button, Card, Tabs } from 'antd';
+import { useSnapshot } from 'valtio';
 import IssueDataDisplay from './IssueDataDisplay';
 import IssueMetrics from './IssueMetrics';
 

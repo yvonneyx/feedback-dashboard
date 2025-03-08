@@ -1,10 +1,10 @@
 'use client';
 
+import { feedbackStore } from '@/app/store/feedbackStore';
+import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
+import { Badge, Card, Statistic, Typography } from 'antd';
 import React from 'react';
 import { useSnapshot } from 'valtio';
-import { Card, Badge, Typography, Statistic, Tag } from 'antd';
-import { ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
-import { feedbackStore } from '@/app/store/feedbackStore';
 
 const { Text } = Typography;
 
@@ -117,7 +117,7 @@ export default function KeyMetrics() {
           {/* Issue解决进度卡片 */}
           <Card
             className="rounded-xl shadow-sm hover:shadow-md metric-card overflow-hidden border border-slate-100"
-            variant="bordered"
+            variant="outlined"
             loading={issueAnalyticsLoading}
             bodyStyle={{ padding: '16px', backgroundColor: '#f8faff' }}
           >
@@ -163,7 +163,7 @@ export default function KeyMetrics() {
           <Card
             className="rounded-xl shadow-sm hover:shadow-md metric-card overflow-hidden border border-slate-100"
             loading={issueAnalyticsLoading}
-            variant="bordered"
+            variant="outlined"
             bodyStyle={{ padding: '16px', backgroundColor: '#f9f7ff' }}
           >
             {/* 书签式 emoji */}
@@ -222,7 +222,7 @@ export default function KeyMetrics() {
           <Card
             className="rounded-xl shadow-sm hover:shadow-md metric-card overflow-hidden border border-slate-100"
             loading={loading || issueAnalyticsLoading}
-            variant="bordered"
+            variant="outlined"
             bodyStyle={{ padding: '16px', backgroundColor: '#f7fefc' }}
           >
             {/* 书签式 emoji */}
@@ -261,7 +261,7 @@ export default function KeyMetrics() {
           <Card
             className="rounded-xl shadow-sm hover:shadow-md metric-card overflow-hidden border border-slate-100"
             loading={loading || issueAnalyticsLoading}
-            variant="bordered"
+            variant="outlined"
             bodyStyle={{ padding: '16px', backgroundColor: '#fdf7ff' }}
           >
             {/* 书签式 emoji */}

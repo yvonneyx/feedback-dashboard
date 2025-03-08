@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
 import { Octokit } from '@octokit/rest';
+import { NextResponse } from 'next/server';
 
 // 配置GitHub API客户端
 const octokit = new Octokit({
-  auth: process.env.GITHUB_TOKEN,
+  auth: process.env.PERSONAL_GITHUB_TOKEN,
 });
 
 export async function POST(request: Request) {
@@ -140,16 +140,18 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
             event.actor?.login !== issueCreator &&
             event.actor?.type !== 'Bot'
         )
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
+        .sort(
+          (a: any, b: any) => new Date(a?.created_at).getTime() - new Date(b?.created_at).getTime()
+        )[0];
 
       // 确定哪个事件先发生 - 评论或标签添加
       if (firstMaintainerComment || firstLabelEvent) {
         hasResponse = true;
 
-        let commentTime = firstMaintainerComment
+        const commentTime = firstMaintainerComment
           ? new Date(firstMaintainerComment.created_at)
           : null;
-        let labelTime = firstLabelEvent ? new Date(firstLabelEvent.created_at) : null;
+        const labelTime = firstLabelEvent ? new Date((firstLabelEvent as any).created_at) : null;
 
         // 比较哪个响应先发生
         if (commentTime && labelTime) {

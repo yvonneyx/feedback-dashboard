@@ -1,15 +1,13 @@
 'use client';
 
-import React from 'react';
-import { Card, Radio, Space } from 'antd';
-import { DatabaseOutlined } from '@ant-design/icons';
-import { updateRepo, feedbackStore, ALL_PRODUCTS } from '@/app/store/feedbackStore';
+import { ALL_PRODUCTS, feedbackStore, updateRepo } from '@/app/store/feedbackStore';
+import { Radio, Space } from 'antd';
 import { useSnapshot } from 'valtio';
 
 export default function TechStackFilter() {
   const { filters } = useSnapshot(feedbackStore);
 
-  const handleRepoChange = e => {
+  const handleRepoChange = (e: any) => {
     updateRepo(e.target.value);
   };
 

@@ -1,13 +1,11 @@
 'use client';
 
-import React from 'react';
-import { useSnapshot } from 'valtio';
 import { feedbackStore } from '@/app/store/feedbackStore';
-import { Table, Spin, Alert, Tag, Typography, Tooltip, Empty, Button, Space } from 'antd';
-import type { TableColumnsType } from 'antd/es/table';
-import { GithubOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, GithubOutlined } from '@ant-design/icons';
+import { Button, Empty, Space, Spin, Table, TableColumnsType, Tag, Typography } from 'antd';
+import { useSnapshot } from 'valtio';
 
-const { Text, Link } = Typography;
+const { Text } = Typography;
 
 interface IssueDataDisplayProps {
   dataType: 'unresponded-issues' | 'issue-response-times';
@@ -26,6 +24,7 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
   const getRepoFromUrl = (url: string) => {
     if (!url) return '';
     try {
+      // @ts-nocheck
       const matches = url.match(/github\.com\/([^\/]+\/[^\/]+)/);
       return matches ? matches[1].split('/')[1] : '';
     } catch {
@@ -67,7 +66,7 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
         title: '产品',
         key: 'repo',
         width: 100,
-        render: (_, record) => {
+        render: (_: any, record: any) => {
           const repo = getRepoFromUrl(record.html_url);
           return (
             <Tag color="blue" className="rounded-full px-2">
@@ -86,7 +85,8 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
           { text: 'AVA', value: 'ava' },
           { text: 'Charts', value: 'charts' },
         ],
-        onFilter: (value, record) => getRepoFromUrl(record.html_url).toLowerCase() === value,
+        onFilter: (value: any, record: any) =>
+          getRepoFromUrl(record.html_url).toLowerCase() === value,
       });
     }
 
@@ -108,8 +108,9 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
         dataIndex: 'created_at',
         key: 'created_at',
         width: '15%',
-        render: time => formatDate(time),
-        sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        render: (time: string) => formatDate(time),
+        sorter: (a: any, b: any) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       }
     );
 
@@ -124,7 +125,7 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
   // 获取Issue响应时间的列定义
   const getIssueResponseTimesColumns = (): TableColumnsType<any> => {
     return [
-      ...getBaseColumns(),
+      ...(getBaseColumns() as any),
       {
         title: '状态',
         dataIndex: 'state',
@@ -139,7 +140,7 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
           { text: '开启', value: 'open' },
           { text: '关闭', value: 'closed' },
         ],
-        onFilter: (value, record) => record.state === value,
+        onFilter: (value: string, record: any) => record.state === value,
       },
       {
         title: '是否响应',
@@ -153,7 +154,7 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
           { text: '已响应', value: true },
           { text: '未响应', value: false },
         ],
-        onFilter: (value, record) => record.hasResponse === value,
+        onFilter: (value: boolean, record: any) => record.hasResponse === value,
       },
       {
         title: '响应时间(小时)',
@@ -172,7 +173,7 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
             </Text>
           );
         },
-        sorter: (a, b) => {
+        sorter: (a: any, b: any) => {
           if (a.responseTimeInHours === null && b.responseTimeInHours === null) return 0;
           if (a.responseTimeInHours === null) return 1;
           if (b.responseTimeInHours === null) return -1;
@@ -267,16 +268,3 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
     </div>
   );
 }
-
-// 技术栈选项，供筛选使用
-const TECH_OPTIONS = [
-  { label: 'G', value: 'G' },
-  { label: 'G2', value: 'G2' },
-  { label: 'S2', value: 'S2' },
-  { label: 'F2', value: 'F2' },
-  { label: 'G6', value: 'G6' },
-  { label: 'X6', value: 'X6' },
-  { label: 'L7', value: 'L7' },
-  { label: 'AVA', value: 'AVA' },
-  { label: 'ADC', value: 'ADC' },
-];

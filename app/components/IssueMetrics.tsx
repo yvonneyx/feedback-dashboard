@@ -1,34 +1,12 @@
 'use client';
 
-import React from 'react';
-import {
-  Card,
-  Row,
-  Col,
-  Statistic,
-  Progress,
-  Spin,
-  Typography,
-  Divider,
-  Tag,
-  Table,
-  Badge,
-  Tooltip,
-  Empty,
-} from 'antd';
-import {
-  FileSearchOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  IssuesCloseOutlined,
-  MessageOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
-import { feedbackStore, ALL_PRODUCTS } from '../store/feedbackStore';
-import { useSnapshot } from 'valtio';
+import { CheckCircleOutlined, InfoCircleOutlined, MessageOutlined } from '@ant-design/icons';
+import { Badge, Card, Empty, Progress, Spin, Statistic, Table, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
+import { useSnapshot } from 'valtio';
+import { feedbackStore } from '../store/feedbackStore';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 export default function IssueMetrics() {
   const { issueResponseTimes, productResponseTimes, issueAnalyticsLoading, filters } =
@@ -127,7 +105,7 @@ export default function IssueMetrics() {
       dataIndex: 'product',
       key: 'product',
       width: 150,
-      render: text => (
+      render: (text: string) => (
         <Text strong className="text-slate-700">
           {text}
         </Text>
@@ -138,24 +116,24 @@ export default function IssueMetrics() {
       dataIndex: 'issueCount',
       key: 'issueCount',
       width: 150,
-      sorter: (a, b) => a.issueCount - b.issueCount,
-      render: val => <span className="text-slate-600">{val}</span>,
+      sorter: (a: any, b: any) => a.issueCount - b.issueCount,
+      render: (val: number) => <span className="text-slate-600">{val}</span>,
     },
     {
       title: '已解决数量',
       dataIndex: 'closedCount',
       key: 'closedCount',
       width: 100,
-      sorter: (a, b) => a.closedCount - b.closedCount,
-      render: val => <span className="text-slate-600">{val}</span>,
+      sorter: (a: any, b: any) => a.closedCount - b.closedCount,
+      render: (val: number) => <span className="text-slate-600">{val}</span>,
     },
     {
       title: '解决率',
       dataIndex: 'closedRate',
       key: 'closedRate',
       width: 200,
-      sorter: (a, b) => a.closedRate - b.closedRate,
-      render: rate => (
+      sorter: (a: any, b: any) => a.closedRate - b.closedRate,
+      render: (rate: number) => (
         <div className="flex items-center">
           <Progress
             percent={rate}
@@ -171,8 +149,8 @@ export default function IssueMetrics() {
       dataIndex: 'responsiveRate',
       key: 'responsiveRate',
       width: 200,
-      sorter: (a, b) => a.responsiveRate - b.responsiveRate,
-      render: rate => (
+      sorter: (a: any, b: any) => a.responsiveRate - b.responsiveRate,
+      render: (rate: number) => (
         <div className="flex items-center">
           <Progress
             percent={rate}
