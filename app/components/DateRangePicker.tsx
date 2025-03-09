@@ -39,11 +39,11 @@ export default function DateRangePicker() {
   return (
     <div className="w-full">
       <h2 className="text-xs text-gray-500 mb-2 font-medium">时间段筛选</h2>
-      <div className="py-2 px-3 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-100 shadow-inner">
+      <div className="py-2 px-3 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-100 shadow-inner hover:bg-white/80 transition-all duration-300">
         <RangePicker
           presets={rangePresets}
           onChange={onRangeChange}
-          className="w-full rounded-lg transition-all duration-300"
+          className="w-full rounded-lg transition-all duration-300 filter-component"
           defaultValue={[dayjs(snapshot.filters.startDate), dayjs(snapshot.filters.endDate)]}
           allowClear={false}
           variant="borderless"

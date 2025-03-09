@@ -32,17 +32,20 @@ export default function Home() {
   }, [filters.repo, filters.startDate, filters.endDate]);
 
   return (
-    <div className="min-h-screen bg-[#F5F7FF] text-slate-700 font-['Inter',system-ui,sans-serif]">
+    <div className="min-h-screen bg-[#F5F7FF] text-slate-700 font-['Inter',system-ui,sans-serif] texture-bg">
       {/* 顶部装饰彩带 - 更细致一些 */}
-      <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500"></div>
+      <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 shadow-sm"></div>
 
       {/* 整体布局容器 */}
-      <div className="py-6 px-4 md:px-6 max-w-7xl mx-auto">
+      <div className="py-6 px-4 md:px-6 max-w-7xl mx-auto fade-in">
         {/* 页面标题和筛选区域 */}
-        <header className="mb-6 relative">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-5">
+        <header className="mb-6 relative fade-in" style={{ animationDelay: '0.1s' }}>
+          <div className="flex flex-col md:flex-row items-center justify-between mb-5 gap-4">
             <div className="flex items-center">
-              <div className="bg-indigo-500/10 p-2 rounded-lg mr-3">
+              <div
+                className="bg-indigo-500/10 p-2.5 rounded-lg mr-3 shadow-sm pulse-animation"
+                style={{ animationDuration: '3s' }}
+              >
                 <LineChartOutlined className="text-xl text-indigo-500" />
               </div>
               <div>
@@ -82,7 +85,7 @@ export default function Home() {
         </header>
 
         {/* 关键指标 */}
-        <KeyMetrics />
+        <KeyMetrics className="hover:shadow-lg transition-all duration-300" />
 
         {error && (
           <div className="mb-4">
@@ -90,13 +93,16 @@ export default function Home() {
               description={error}
               type="info"
               showIcon
-              className="rounded-xl border-0 shadow-sm"
+              className="rounded-xl border-0 shadow-sm animate-fadeIn"
             />
           </div>
         )}
 
         {/* 标签页内容区 */}
-        <Card className="rounded-xl border-0 shadow-md overflow-hidden" bodyStyle={{ padding: 0 }}>
+        <Card
+          className="rounded-xl border-0 shadow-md overflow-hidden hover:shadow-lg transition-all duration-300"
+          bodyStyle={{ padding: 0 }}
+        >
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -143,9 +149,9 @@ export default function Home() {
         <footer className="mt-8 mb-6 text-center text-gray-500 text-xs">
           <Divider className="opacity-50" />
           <div className="flex items-center justify-center gap-1">
-            <span>AntV 社区数据看板</span>
+            <span>AntV 社区答疑数据看板</span>
             <span className="inline-block mx-1.5 h-1 w-1 rounded-full bg-gray-300"></span>
-            <span>Made by @半璇</span>
+            <span>有疑问请联系 @半璇</span>
           </div>
         </footer>
       </div>

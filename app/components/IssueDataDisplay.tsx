@@ -259,9 +259,14 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
               showSizeChanger: true,
               showQuickJumper: true,
               showTotal: total => `共 ${total} 条记录`,
+              className: 'custom-pagination',
             }}
             columns={getColumns()}
-            className="custom-table"
+            className="custom-table hover-row-highlight"
+            rowClassName={(record, index) => (index % 2 === 0 ? 'bg-gray-50/50' : '')}
+            onRow={record => ({
+              className: 'transition-all duration-200 hover:bg-blue-50/50',
+            })}
           />
         </div>
       )}

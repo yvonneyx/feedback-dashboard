@@ -1,0 +1,108 @@
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* 精细的悬停效果 */
+.hover-lift {
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
+/* 微妙的脉冲效果用于状态指示器 */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.pulse-animation {
+  animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* 表格行悬停效果 */
+.custom-table .ant-table-tbody tr:hover > td {
+  background-color: rgba(237, 242, 255, 0.7) !important;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c5cae9;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9fa8da;
+}
+
+/* 背景细微纹理 */
+.texture-bg {
+  background-color: #f5f7ff;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657l1.415 1.414L13.857 0H11.03zm32.284 0l6.9 6.9-1.414 1.414L41.7 0h2.827zM16.686 0L9.787 6.9l1.414 1.414L20.514 0h-3.828zm9.9 0l-9.9 9.9 1.415 1.414L36.828 0h-5.414zm-3.03 0L23.786 4.9l1.414 1.414L30.7 0h-2.3zM0 51.8l.828.83L2.243 51.8 0 54.627v-2.827zm0-5.656l.828.829L2.243 46.143 0 48.97v-2.827zm0-5.657l.828.829L2.243 40.486 0 43.314v-2.828zm0-5.657l.828.829L2.243 34.83 0 37.657v-2.829zm0-5.657l.828.829L2.243 29.17 0 32v-2.83zm0-5.657l.828.829L2.243 23.515 0 26.343v-2.83zm0-5.657l.828.829L2.243 17.857 0 20.686v-2.83zm0-5.657l.828.829L2.243 12.2 0 15.03v-2.83zm0-5.657l.828.829L2.243 6.544 0 9.372V6.544zm0-5.657l.828.829L2.243.887 0 3.715V.887zm60 49.428l-.83-.828-1.414 1.414L60 51.8v2.827zm0-5.656l-.83-.828-1.414 1.414L60 46.143v2.827zm0-5.657l-.83-.828-1.414 1.414L60 40.485v2.83zm0-5.657l-.83-.828-1.414 1.414L60 34.83v2.83zm0-5.657l-.83-.828-1.414 1.414L60 29.17v2.83zm0-5.657l-.83-.828-1.414 1.414L60 23.514v2.83zm0-5.657l-.83-.828-1.414 1.414L60 17.857v2.83zm0-5.657l-.83-.828-1.414 1.414L60 12.2v2.83zm0-5.657l-.83-.828-1.414 1.414L60 6.542V9.37zm0-5.657l-.83-.828-1.414 1.414L60 .885v2.83z' fill='%239C92AC' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+
+/* 边框微妙发光效果 */
+.glow-border:focus-within {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 微妙加载过渡效果 */
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 精细标签样式 */
+.custom-tag {
+  border-radius: 12px;
+  padding: 0 8px;
+  font-size: 11px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}

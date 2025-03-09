@@ -116,7 +116,7 @@ export default function KeyMetrics() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Issue解决进度卡片 */}
           <Card
-            className="rounded-xl shadow-sm hover:shadow-md metric-card overflow-hidden border border-slate-100"
+            className="rounded-xl shadow-sm hover:shadow-lg metric-card overflow-hidden border border-slate-100 hover-lift"
             variant="outlined"
             loading={issueAnalyticsLoading}
             bodyStyle={{ padding: '16px', backgroundColor: '#f8faff' }}
