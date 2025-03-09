@@ -110,7 +110,7 @@ export default function KeyMetrics() {
       <div className="p-5 relative">
         <h2 className="text-base font-semibold mb-4 text-slate-700 flex items-center">
           <span className="w-1 h-4 bg-indigo-500 rounded-sm mr-2 inline-block"></span>
-          核心数据指标
+          核心指标
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

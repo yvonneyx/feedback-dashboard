@@ -263,8 +263,8 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
             }}
             columns={getColumns()}
             className="custom-table hover-row-highlight"
-            rowClassName={(record, index) => (index % 2 === 0 ? 'bg-gray-50/50' : '')}
-            onRow={record => ({
+            rowClassName={(_, index) => (index % 2 === 0 ? 'bg-gray-50/50' : '')}
+            onRow={_ => ({
               className: 'transition-all duration-200 hover:bg-blue-50/50',
             })}
           />
