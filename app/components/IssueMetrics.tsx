@@ -282,7 +282,7 @@ export default function IssueMetrics() {
 
             <div className="flex items-center text-xs text-gray-500 mt-1">
               <CheckCircleOutlined className="mr-1 text-emerald-500" />
-              <span>目标: 80% 以上</span>
+              <span>目标: 95% 以上</span>
             </div>
           </div>
         </Card>

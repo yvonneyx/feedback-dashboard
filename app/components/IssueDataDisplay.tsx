@@ -26,7 +26,9 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
     try {
       // @ts-nocheck
       const matches = url.match(/github\.com\/([^\/]+\/[^\/]+)/);
-      return matches ? matches[1].split('/')[1] : '';
+      const repo = matches ? matches[1].split('/')[1] : '';
+      if (repo === 'ant-design-charts') return 'Charts';
+      return repo;
     } catch {
       return '';
     }

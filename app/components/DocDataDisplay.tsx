@@ -63,6 +63,7 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
       title: '提交时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      width: 150,
       render: (text: string) => formatDate(text),
       sorter: (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     },

@@ -1,8 +1,7 @@
 'use client';
 
 import { feedbackStore } from '@/app/store/feedbackStore';
-import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
-import { Badge, Card, Statistic, Typography } from 'antd';
+import { Badge, Card, Statistic, Tag, Typography } from 'antd';
 import React from 'react';
 import { useSnapshot } from 'valtio';
 
@@ -56,24 +55,24 @@ export default function KeyMetrics() {
     },
     responseRate: {
       current: liveStats.responseRate,
-      baseline: 80,
+      baseline: 95,
       trend:
-        liveStats.responseRate > 80
-          ? `+${(liveStats.responseRate - 80).toFixed(1)}%`
-          : `-${(80 - liveStats.responseRate).toFixed(1)}%`,
-      isGood: liveStats.responseRate >= 80, // 数值高于基准是好的
+        liveStats.responseRate > 95
+          ? `+${(liveStats.responseRate - 95).toFixed(1)}%`
+          : `-${(95 - liveStats.responseRate).toFixed(1)}%`,
+      isGood: liveStats.responseRate >= 95,
     },
     feedbackCount: {
       current: liveStats.docComments,
     },
     resolutionRate: {
       current: liveStats.docCommentResolvedRate,
-      baseline: 80,
+      baseline: 90,
       trend:
-        liveStats.docCommentResolvedRate > 80
-          ? `+${(liveStats.docCommentResolvedRate - 80).toFixed(1)}%`
-          : `-${(80 - liveStats.docCommentResolvedRate).toFixed(1)}%`,
-      isGood: liveStats.docCommentResolvedRate >= 80, // 数值高于基准是好的
+        liveStats.docCommentResolvedRate > 90
+          ? `+${(liveStats.docCommentResolvedRate - 90).toFixed(1)}%`
+          : `-${(90 - liveStats.docCommentResolvedRate).toFixed(1)}%`,
+      isGood: liveStats.docCommentResolvedRate >= 90,
     },
   };
 
@@ -110,7 +109,7 @@ export default function KeyMetrics() {
       <div className="p-5 relative">
         <h2 className="text-base font-semibold mb-4 text-slate-700 flex items-center">
           <span className="w-1 h-4 bg-indigo-500 rounded-sm mr-2 inline-block"></span>
-          核心指标
+          重点指标
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -119,8 +118,18 @@ export default function KeyMetrics() {
             className="rounded-xl shadow-sm hover:shadow-lg metric-card overflow-hidden border border-slate-100 hover-lift"
             variant="outlined"
             loading={issueAnalyticsLoading}
-            bodyStyle={{ padding: '16px', backgroundColor: '#f8faff' }}
+            bodyStyle={{
+              padding: '16px',
+              backgroundColor: 'white',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
           >
+            {/* 右上角渐变装饰 */}
+            <div className="absolute top-0 right-0 w-48 h-48 rounded-bl-[180px] bg-gradient-to-br from-[rgba(66,133,244,0.05)] to-[rgba(66,133,244,0.15)] -z-10"></div>
+            {/* 左下角渐变线 */}
+            <div className="absolute bottom-0 left-0 w-24 h-1 bg-gradient-to-r from-[rgba(66,133,244,0.2)] to-transparent -z-10"></div>
+
             {/* 书签式 emoji */}
             <div className="absolute -right-1 -top-1 z-10 floating-emoji">
               <div
@@ -134,12 +143,12 @@ export default function KeyMetrics() {
             <Statistic
               title={
                 <div className="flex items-center">
-                  <Badge color="#3b82f6" />
+                  <Badge color="#4285F4" />
                   <Text className="text-gray-500 font-medium text-xs ml-1.5">Open Issue 数量</Text>
                 </div>
               }
               value={stats.openIssues.current}
-              valueStyle={{ color: '#1d4ed8', fontWeight: '600', fontSize: '1.75rem' }}
+              valueStyle={{ color: '#1a73e8', fontWeight: '600', fontSize: '1.75rem' }}
               suffix={
                 <span className="text-gray-400 font-normal text-base">
                   / {stats.openIssues.total}
@@ -147,9 +156,9 @@ export default function KeyMetrics() {
               }
             />
 
-            <div className="mt-3 w-full h-1.5 bg-blue-100 rounded-full overflow-hidden">
+            <div className="mt-3 w-full h-1.5 bg-blue-50 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 progress-bar-animation"
+                className="h-full rounded-full bg-gradient-to-r from-[#4285F4] to-[#1a73e8] progress-bar-animation"
                 style={{
                   width: stats.openIssues.total
                     ? `${((stats.openIssues.current / stats.openIssues.total) * 100).toFixed(1)}%`
@@ -164,12 +173,22 @@ export default function KeyMetrics() {
             className="rounded-xl shadow-sm hover:shadow-md metric-card overflow-hidden border border-slate-100"
             loading={issueAnalyticsLoading}
             variant="outlined"
-            bodyStyle={{ padding: '16px', backgroundColor: '#f9f7ff' }}
+            bodyStyle={{
+              padding: '16px',
+              backgroundColor: 'white',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
           >
+            {/* 右上角渐变装饰 */}
+            <div className="absolute top-0 right-0 w-40 h-40 rounded-bl-[160px] bg-gradient-to-br from-[rgba(66,133,244,0.05)] to-[rgba(66,133,244,0.15)] -z-10"></div>
+            {/* 左侧渐变条 */}
+            <div className="absolute top-6 bottom-6 left-0 w-1 bg-gradient-to-b from-[rgba(66,133,244,0.25)] via-[rgba(66,133,244,0.1)] to-[rgba(66,133,244,0.25)] -z-10"></div>
+
             {/* 书签式 emoji */}
             <div
               className="absolute -right-1 -top-1 z-10 floating-emoji"
-              style={{ animationDelay: '0.5s' }}
+              style={{ transform: 'rotate(5deg)' }}
             >
               <div
                 className="text-4xl"
@@ -182,37 +201,37 @@ export default function KeyMetrics() {
             <Statistic
               title={
                 <div className="flex items-center">
-                  <Badge status="processing" color="#6366f1" />
+                  <Badge status="processing" color="#4285F4" />
                   <Text className="text-gray-500 font-medium text-xs ml-1.5">48小时响应率</Text>
+                  <div className="ml-1.5">
+                    <Tag
+                      bordered={false}
+                      style={{
+                        backgroundColor: 'rgba(66, 133, 244, 0.08)',
+                        color: '#1a73e8',
+                        border: '1px dashed rgba(66, 133, 244, 0.3)',
+                        fontWeight: 500,
+                        fontSize: '11px',
+                      }}
+                    >
+                      目标值 95%
+                    </Tag>
+                  </div>
                 </div>
               }
               value={stats.responseRate.current}
               precision={1}
-              valueStyle={{ color: '#4338ca', fontWeight: '600', fontSize: '1.75rem' }}
+              valueStyle={{ color: '#1a73e8', fontWeight: '600', fontSize: '1.75rem' }}
               suffix={
                 <div className="inline-flex items-center">
                   <span className="text-gray-400 text-base">%</span>
-                  <span
-                    className={`text-[10px] ml-2 px-1.5 py-0.5 rounded-full ${
-                      stats.responseRate.isGood
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'bg-amber-100 text-amber-700'
-                    }`}
-                  >
-                    {stats.responseRate.trend}
-                    {stats.responseRate.isGood ? (
-                      <ArrowUpOutlined className="ml-0.5 text-[9px]" />
-                    ) : (
-                      <ArrowDownOutlined className="ml-0.5 text-[9px]" />
-                    )}
-                  </span>
                 </div>
               }
             />
 
-            <div className="mt-3 w-full h-1.5 bg-indigo-100 rounded-full overflow-hidden">
+            <div className="mt-3 w-full h-1.5 bg-blue-50 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-violet-500 progress-bar-animation"
+                className="h-full rounded-full bg-gradient-to-r from-[#4285F4] to-[#1a73e8] progress-bar-animation"
                 style={{ width: `${stats.responseRate.current}%` }}
               ></div>
             </div>
@@ -223,12 +242,22 @@ export default function KeyMetrics() {
             className="rounded-xl shadow-sm hover:shadow-md metric-card overflow-hidden border border-slate-100"
             loading={loading || issueAnalyticsLoading}
             variant="outlined"
-            bodyStyle={{ padding: '16px', backgroundColor: '#f7fefc' }}
+            bodyStyle={{
+              padding: '16px',
+              backgroundColor: 'white',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
           >
+            {/* 右上角渐变装饰 */}
+            <div className="absolute top-0 right-0 w-44 h-44 rounded-bl-[180px] bg-gradient-to-br from-[rgba(52,168,83,0.05)] to-[rgba(52,168,83,0.15)] -z-10"></div>
+            {/* 底部渐变线 */}
+            <div className="absolute bottom-0 left-4 right-4 h-1 bg-gradient-to-r from-transparent via-[rgba(52,168,83,0.15)] to-transparent -z-10"></div>
+
             {/* 书签式 emoji */}
             <div
               className="absolute -right-1 -top-1 z-10 floating-emoji"
-              style={{ animationDelay: '1s' }}
+              style={{ transform: 'rotate(-5deg)' }}
             >
               <div
                 className="text-4xl"
@@ -241,17 +270,17 @@ export default function KeyMetrics() {
             <Statistic
               title={
                 <div className="flex items-center">
-                  <Badge color="#10b981" />
+                  <Badge color="#34A853" />
                   <Text className="text-gray-500 font-medium text-xs ml-1.5">文档反馈数</Text>
                 </div>
               }
               value={stats.feedbackCount.current}
-              valueStyle={{ color: '#059669', fontWeight: '600', fontSize: '1.75rem' }}
+              valueStyle={{ color: '#137333', fontWeight: '600', fontSize: '1.75rem' }}
             />
 
-            <div className="mt-3 w-full h-1.5 bg-emerald-100 rounded-full overflow-hidden">
+            <div className="mt-3 w-full h-1.5 bg-green-50 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 progress-bar-animation"
+                className="h-full rounded-full bg-gradient-to-r from-[#34A853] to-[#137333] progress-bar-animation"
                 style={{ width: '100%' }}
               ></div>
             </div>
@@ -262,12 +291,22 @@ export default function KeyMetrics() {
             className="rounded-xl shadow-sm hover:shadow-md metric-card overflow-hidden border border-slate-100"
             loading={loading || issueAnalyticsLoading}
             variant="outlined"
-            bodyStyle={{ padding: '16px', backgroundColor: '#fdf7ff' }}
+            bodyStyle={{
+              padding: '16px',
+              backgroundColor: 'white',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
           >
+            {/* 右上角渐变装饰 */}
+            <div className="absolute top-0 right-0 w-40 h-40 rounded-bl-[160px] bg-gradient-to-br from-[rgba(52,168,83,0.05)] to-[rgba(52,168,83,0.15)] -z-10"></div>
+            {/* 顶部渐变条 */}
+            <div className="absolute top-0 left-6 right-6 h-1 bg-gradient-to-r from-[rgba(52,168,83,0.2)] via-transparent to-[rgba(52,168,83,0.2)] -z-10"></div>
+
             {/* 书签式 emoji */}
             <div
               className="absolute -right-1 -top-1 z-10 floating-emoji"
-              style={{ animationDelay: '1.5s' }}
+              style={{ transform: 'rotate(3deg)' }}
             >
               <div
                 className="text-4xl"
@@ -280,37 +319,37 @@ export default function KeyMetrics() {
             <Statistic
               title={
                 <div className="flex items-center">
-                  <Badge color="#c026d3" />
+                  <Badge color="#34A853" />
                   <Text className="text-gray-500 font-medium text-xs ml-1.5">文档反馈解决率</Text>
+                  <div className="ml-1.5">
+                    <Tag
+                      bordered={false}
+                      style={{
+                        backgroundColor: 'rgba(52, 168, 83, 0.08)',
+                        color: '#137333',
+                        border: '1px dashed rgba(52, 168, 83, 0.3)',
+                        fontWeight: 500,
+                        fontSize: '11px',
+                      }}
+                    >
+                      目标值 90%
+                    </Tag>
+                  </div>
                 </div>
               }
               value={stats.resolutionRate.current}
               precision={1}
-              valueStyle={{ color: '#9d174d', fontWeight: '600', fontSize: '1.75rem' }}
+              valueStyle={{ color: '#137333', fontWeight: '600', fontSize: '1.75rem' }}
               suffix={
                 <div className="inline-flex items-center">
                   <span className="text-gray-400 text-base">%</span>
-                  <span
-                    className={`text-[10px] ml-2 px-1.5 py-0.5 rounded-full ${
-                      stats.resolutionRate.isGood
-                        ? 'bg-fuchsia-100 text-fuchsia-700'
-                        : 'bg-amber-100 text-amber-700'
-                    }`}
-                  >
-                    {stats.resolutionRate.trend}
-                    {stats.resolutionRate.isGood ? (
-                      <ArrowUpOutlined className="ml-0.5 text-[9px]" />
-                    ) : (
-                      <ArrowDownOutlined className="ml-0.5 text-[9px]" />
-                    )}
-                  </span>
                 </div>
               }
             />
 
-            <div className="mt-3 w-full h-1.5 bg-fuchsia-100 rounded-full overflow-hidden">
+            <div className="mt-3 w-full h-1.5 bg-green-50 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-fuchsia-400 to-pink-500 progress-bar-animation"
+                className="h-full rounded-full bg-gradient-to-r from-[#34A853] to-[#137333] progress-bar-animation"
                 style={{ width: `${stats.resolutionRate.current}%` }}
               ></div>
             </div>
