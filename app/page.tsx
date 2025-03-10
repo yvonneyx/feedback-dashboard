@@ -67,7 +67,12 @@ export default function Home() {
               icon={<TeamOutlined />}
               className="rounded-lg shadow-sm transition-all duration-300 border-0 bg-gradient-to-r from-indigo-500 to-blue-500 hover:opacity-90"
               size="middle"
-              onClick={() => window.open('https://example.com/internal-support', '_blank')}
+              onClick={() =>
+                window.open(
+                  'https://deepinsight.alipay.com/view.htm?reportId=D2025030600161401000023955562',
+                  '_blank'
+                )
+              }
             >
               查看内部答疑看板
             </Button>
