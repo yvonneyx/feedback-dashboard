@@ -113,7 +113,7 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
       width: 250,
     },
     {
-      title: '是否已解决',
+      title: '当前状态',
       dataIndex: 'isResolved',
       key: 'isResolved',
       width: 130,
@@ -167,6 +167,7 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
       title: '产品',
       dataIndex: 'repo',
       key: 'repo',
+      width: 80,
       render: (text: string) => (
         <Tag color="blue" className="rounded-full px-2 font-medium">
           {formatRepo(text)}

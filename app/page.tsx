@@ -90,7 +90,7 @@ export default function Home() {
         </header>
 
         {/* 关键指标 */}
-        <div className="hover:shadow-lg transition-all duration-300">
+        <div className="transition-all duration-300">
           <KeyMetrics />
         </div>
 
