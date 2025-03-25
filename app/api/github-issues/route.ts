@@ -136,9 +136,8 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
         .filter(
           (event: any) =>
             event.event === 'labeled' &&
-            event.actor &&
-            event.actor?.login !== issueCreator &&
-            event.actor?.type !== 'Bot'
+            ((event.actor && event.actor?.login !== issueCreator && event.actor?.type !== 'Bot') ||
+              event.label?.name === 'OSCP')
         )
         .sort(
           (a: any, b: any) => new Date(a?.created_at).getTime() - new Date(b?.created_at).getTime()
