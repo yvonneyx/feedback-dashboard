@@ -1,10 +1,29 @@
 import { Octokit } from '@octokit/rest';
 import { NextResponse } from 'next/server';
 
-// 配置GitHub API客户端
+// 直接设置API超时常量，避免使用getConfig
+const API_TIMEOUT = 120000; // 默认120秒
+
+// 配置GitHub API客户端，增加重试和超时配置
 const octokit = new Octokit({
   auth: process.env.PERSONAL_GITHUB_TOKEN,
+  request: {
+    timeout: API_TIMEOUT, // 设置请求超时时间
+  },
 });
+
+// 设置 API 路由配置
+export const config = {
+  api: {
+    responseLimit: false,
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+    externalResolver: true,
+  },
+  runtime: 'nodejs',
+  maxDuration: 300, // 设置最大执行时间为300秒(5分钟)
+};
 
 export async function POST(request: Request) {
   try {
@@ -65,13 +84,15 @@ async function fetchAllIssues(owner: string, repo: string, startDate: string, en
   // 使用分页获取所有符合条件的issues
   while (hasMorePages) {
     try {
-      const searchResponse = await octokit.search.issuesAndPullRequests({
-        q: query,
-        per_page: 100,
-        page,
-        sort: 'created',
-        order: 'desc',
-      });
+      const searchResponse = await fetchWithRetry(() =>
+        octokit.search.issuesAndPullRequests({
+          q: query,
+          per_page: 100,
+          page,
+          sort: 'created',
+          order: 'desc',
+        })
+      );
 
       if (searchResponse.data.items.length > 0) {
         issues.push(...searchResponse.data.items);
@@ -95,6 +116,40 @@ async function fetchAllIssues(owner: string, repo: string, startDate: string, en
   return issues;
 }
 
+// 重试函数，当请求失败时重试
+async function fetchWithRetry(fetchFn: Function, maxRetries = 3, delay = 2000) {
+  let retries = 0;
+
+  while (retries < maxRetries) {
+    try {
+      return await fetchFn();
+    } catch (error: any) {
+      retries++;
+
+      // 如果是最后一次尝试失败，直接抛出错误
+      if (retries === maxRetries) {
+        throw error;
+      }
+
+      // 如果是速率限制错误，延迟更长时间
+      if (error?.status === 403 && error?.headers?.['x-ratelimit-remaining'] === '0') {
+        const resetTime = error?.headers?.['x-ratelimit-reset']
+          ? parseInt(error.headers['x-ratelimit-reset']) * 1000
+          : Date.now() + 60000;
+
+        const waitTime = Math.max(resetTime - Date.now(), 10000);
+        console.log(`GitHub API 速率限制，等待 ${waitTime / 1000} 秒后重试...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      } else {
+        // 常规错误，使用指数退避策略
+        const waitTime = delay * Math.pow(2, retries - 1);
+        console.log(`请求失败，${waitTime / 1000} 秒后重试(${retries}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+  }
+}
+
 // 分析issues的首次响应时间 - 调整处理Search API返回的数据
 async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: string) {
   const analyzedIssues = [];
@@ -110,26 +165,34 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
 
     try {
       // 获取issue的timeline事件，用于分析标签添加
-      const timelineResponse = await octokit.issues.listEventsForTimeline({
-        owner,
-        repo,
-        issue_number: issueNumber,
-      });
+      const timelineResponse = await fetchWithRetry(() =>
+        octokit.issues.listEventsForTimeline({
+          owner,
+          repo,
+          issue_number: issueNumber,
+        })
+      );
 
       // 获取issue的评论，用于分析回复
-      const commentsResponse = await octokit.issues.listComments({
-        owner,
-        repo,
-        issue_number: issueNumber,
-      });
+      const commentsResponse = await fetchWithRetry(() =>
+        octokit.issues.listComments({
+          owner,
+          repo,
+          issue_number: issueNumber,
+        })
+      );
 
       const issueCreatedAt = new Date(issue.created_at);
       const issueCreator = issue.user.login;
 
       // 检查评论中的首次维护者回复
       const firstMaintainerComment = commentsResponse.data
-        .filter(comment => comment.user?.login !== issueCreator && comment.user?.type !== 'Bot')
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
+        .filter(
+          (comment: any) => comment.user?.login !== issueCreator && comment.user?.type !== 'Bot'
+        )
+        .sort(
+          (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        )[0];
 
       // 检查timeline中的首次标签添加事件
       const firstLabelEvent = timelineResponse.data
@@ -166,6 +229,9 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
         }
       }
 
+      // 修正meetsSLA判断，确保正确计算48小时响应率
+      const meetsSLA = hasResponse && responseTimeInHours !== null && responseTimeInHours <= 48;
+
       analyzedIssues.push({
         number: issueNumber,
         title: issue.title,
@@ -174,7 +240,7 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
         html_url: issue.html_url,
         hasResponse,
         responseTimeInHours,
-        meetsSLA: responseTimeInHours !== null && responseTimeInHours <= 48, // 是否符合48小时SLA
+        meetsSLA: meetsSLA, // 确保明确设置
       });
     } catch (error) {
       console.error(`分析issue #${issueNumber}响应时间出错:`, error);

@@ -126,7 +126,11 @@ export async function fetchIssueResponseTimes() {
 
 // 获取单个产品数据
 async function fetchProductData(repo: string) {
+  console.log(feedbackStore.filters);
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2分钟超时
+
     const response = await fetch('/api/github-issues', {
       method: 'POST',
       headers: {
@@ -137,10 +141,13 @@ async function fetchProductData(repo: string) {
         endDate: feedbackStore.filters.endDate,
         repo: repo,
       }),
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId); // 清除超时计时器
+
     if (!response.ok) {
-      throw new Error(`获取${repo}数据失败`);
+      throw new Error(`获取${repo}数据失败: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -157,7 +164,9 @@ async function fetchProductData(repo: string) {
 
     return data;
   } catch (error) {
-    console.error(`获取${repo}数据错误:`, error);
+    // 更详细的错误日志
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    console.error(`获取${repo}数据错误:`, errorMessage);
     // 确保即使单个产品请求失败也不影响其他请求
     feedbackStore.productResponseTimes[repo] = [];
     return [];

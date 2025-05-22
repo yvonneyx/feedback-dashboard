@@ -49,9 +49,18 @@ export default function IssueMetrics() {
           )
         : 0;
 
-    // 48小时响应率
-    const respondedUnder48h = issueResponseTimes.filter(issue => issue.meetsSLA).length;
-    const responseRateUnder48h = Math.round((respondedUnder48h / total) * 100);
+    // 48小时响应率 - 修正计算逻辑
+    const respondedUnder48h = issueResponseTimes.filter(issue => {
+      // 明确检查 hasResponse 和 responseTimeInHours
+      return (
+        issue.hasResponse && issue.responseTimeInHours !== null && issue.responseTimeInHours <= 48
+      );
+    }).length;
+
+    // 确保分母是总issues数而不是只有响应的issues
+    const responseRateUnder48h = total > 0 ? Math.round((respondedUnder48h / total) * 100) : 0;
+
+    console.log(`48小时响应率计算: ${respondedUnder48h}/${total} = ${responseRateUnder48h}%`);
 
     return {
       totalIssues: total,
@@ -79,8 +88,17 @@ export default function IssueMetrics() {
 
         const total = issues.length;
         const closed = issues.filter(issue => issue.state === 'closed').length;
-        const respondedUnder48h = issues.filter(issue => issue.meetsSLA).length;
-        const responseRate = Math.round((respondedUnder48h / total) * 100);
+
+        // 修正 respondedUnder48h 计算
+        const respondedUnder48h = issues.filter(issue => {
+          return (
+            issue.hasResponse &&
+            issue.responseTimeInHours !== null &&
+            issue.responseTimeInHours <= 48
+          );
+        }).length;
+
+        const responseRate = total > 0 ? Math.round((respondedUnder48h / total) * 100) : 0;
 
         // 提取产品名称
         const productName = repo.split('/').pop()?.toUpperCase() || repo;
