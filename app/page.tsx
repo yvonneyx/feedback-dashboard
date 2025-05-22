@@ -12,6 +12,7 @@ import {
   GithubOutlined,
   LineChartOutlined,
   TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { Alert, Button, Card, Divider, Tabs, Typography } from 'antd';
 import { useEffect, useState } from 'react';
@@ -62,20 +63,30 @@ export default function Home() {
                 </Text>
               </div>
             </div>
-            <Button
-              type="primary"
-              icon={<TeamOutlined />}
-              className="rounded-lg shadow-sm transition-all duration-300 border-0 bg-gradient-to-r from-indigo-500 to-blue-500 hover:opacity-90"
-              size="middle"
-              onClick={() =>
-                window.open(
-                  'https://deepinsight.alipay.com/view.htm?reportId=D2025030600161401000023955562',
-                  '_blank'
-                )
-              }
-            >
-              查看内部答疑看板
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                icon={<UserOutlined />}
+                className="rounded-lg shadow-sm transition-all duration-300"
+                size="middle"
+                onClick={() => (window.location.href = '/contributors')}
+              >
+                贡献者统计
+              </Button>
+              <Button
+                type="primary"
+                icon={<TeamOutlined />}
+                className="rounded-lg shadow-sm transition-all duration-300 border-0 bg-gradient-to-r from-indigo-500 to-blue-500 hover:opacity-90"
+                size="middle"
+                onClick={() =>
+                  window.open(
+                    'https://deepinsight.alipay.com/view.htm?reportId=D2025030600161401000023955562',
+                    '_blank'
+                  )
+                }
+              >
+                查看内部答疑看板
+              </Button>
+            </div>
           </div>
 
           <Card
