@@ -1,16 +1,8 @@
 'use client';
 
 import { feedbackStore } from '@/app/store/feedbackStore';
-import {
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  CommentOutlined,
-  FallOutlined,
-  FileTextOutlined,
-  RiseOutlined,
-} from '@ant-design/icons';
-import { Badge, Card, Statistic, Tag, Tooltip, Typography } from 'antd';
-import dayjs from 'dayjs';
+import { FallOutlined, RiseOutlined } from '@ant-design/icons';
+import { Badge, Statistic, Tag, Typography } from 'antd';
 import React from 'react';
 import { useSnapshot } from 'valtio';
 
@@ -142,22 +134,8 @@ export default function KeyMetrics() {
   React.useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
-      @keyframes float {
-        0% { transform: translateY(0px) rotate(3deg); }
-        50% { transform: translateY(-6px) rotate(5deg); }
-        100% { transform: translateY(0px) rotate(3deg); }
-      }
-      .floating-emoji {
-        animation: float 5s ease-in-out infinite;
-      }
-      .metric-card {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .metric-card:hover {
-        transform: translateY(-3px);
-      }
       .progress-bar-animation {
-        transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: width 1s ease-out;
       }
     `;
     document.head.appendChild(style);
@@ -168,56 +146,29 @@ export default function KeyMetrics() {
 
   return (
     <div className="mb-8">
-      <div className="border-b border-gray-200 pb-2 mb-4">
+      {/* <div className="border-b border-gray-200 pb-2 mb-4">
         <Text strong className="text-xl font-medium">
           重点指标
         </Text>
         <span className="text-xs text-gray-500 ml-2">
-          ({filters.repo === '' ? 'AntV 全部产品' : filters.repo}{' '}
+          ({filters.repo === '' ? 'AntV 全部仓库' : filters.repo}{' '}
           {dayjs(filters.startDate).format('MM/DD')} - {dayjs(filters.endDate).format('MM/DD')})
         </span>
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Issue解决率卡片 */}
-        <Card
-          className="rounded-xl shadow-sm hover:shadow-md transition-all duration-300 metric-card overflow-hidden border-0 group bg-gradient-to-br from-blue-50 to-white"
-          variant="outlined"
-          loading={issueAnalyticsLoading}
-          bodyStyle={{
-            padding: '16px',
-            backgroundColor: 'transparent',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
+        <div
+          className="rounded-lg border border-gray-100 bg-white p-4"
+          style={{ opacity: issueAnalyticsLoading ? 0.6 : 1 }}
         >
-          {/* 背景装饰元素 */}
-          <div className="absolute top-3 right-3 w-24 h-24 rounded-full bg-blue-100 opacity-20 -z-10"></div>
-          <div className="absolute bottom-2 left-2 w-16 h-16 rounded-full bg-blue-100 opacity-10 -z-10"></div>
-
-          {/* 右上角图标 */}
-          <div className="absolute right-3 top-3 z-10">
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border-2 border-blue-200">
-              <CheckCircleOutlined className="text-[#4285F4] text-lg" />
-            </div>
-          </div>
-
           <Statistic
             title={
               <div className="flex items-center">
                 <Badge color="#4285F4" />
                 <Text className="text-gray-600 font-medium text-sm ml-1.5">Issue解决率</Text>
                 <div className="ml-1.5">
-                  <Tag
-                    bordered={false}
-                    style={{
-                      backgroundColor: 'rgba(66, 133, 244, 0.08)',
-                      color: '#1a73e8',
-                      border: '1px dashed rgba(66, 133, 244, 0.3)',
-                      fontWeight: 500,
-                      fontSize: '10px',
-                    }}
-                  >
+                  <Tag bordered={false} color="blue" style={{ fontSize: '10px' }}>
                     目标值 80%
                   </Tag>
                 </div>
@@ -225,160 +176,108 @@ export default function KeyMetrics() {
             }
             value={stats.resolvedIssues.current}
             precision={1}
-            valueStyle={{ color: '#1a73e8', fontWeight: '600', fontSize: '2rem' }}
+            valueStyle={{ color: '#1a73e8', fontWeight: '600', fontSize: '1.75rem' }}
             suffix={
               <div className="inline-flex items-center">
-                <span className="text-gray-400 text-lg">%</span>
-                <Tooltip title={`目标: ${stats.resolvedIssues.baseline}%`}>
-                  {stats.resolvedIssues.isGood ? (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded ml-3 flex items-center">
-                      <RiseOutlined className="mr-0.5" />
-                      {stats.resolvedIssues.trend}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded ml-3 flex items-center">
-                      <FallOutlined className="mr-0.5" />
-                      {stats.resolvedIssues.trend}
-                    </span>
-                  )}
-                </Tooltip>
+                <span className="text-gray-400 text-base">%</span>
+                {stats.resolvedIssues.isGood ? (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded ml-2 flex items-center">
+                    <RiseOutlined className="mr-0.5" />
+                    {stats.resolvedIssues.trend}
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded ml-2 flex items-center">
+                    <FallOutlined className="mr-0.5" />
+                    {stats.resolvedIssues.trend}
+                  </span>
+                )}
               </div>
             }
           />
 
           <div className="mt-2 text-[10px] text-gray-400">
             已解决: <span className="font-medium text-blue-700">{liveStats.closedIssues}</span> /
-            总数: <span className="font-medium text-blue-700">{stats.resolvedIssues.total}</span>
+            总计: <span className="font-medium text-gray-600">{liveStats.totalIssues}</span>
           </div>
 
-          <div className="mt-3 w-full h-1.5 bg-blue-50 rounded-full overflow-hidden">
+          {/* 进度条 */}
+          <div className="mt-3 bg-gray-100 h-1 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#4285F4] to-[#1a73e8] progress-bar-animation"
-              style={{ width: `${stats.resolvedIssues.current}%` }}
+              className="h-full bg-blue-500 progress-bar-animation"
+              style={{
+                width: `${stats.resolvedIssues.current > 100 ? 100 : stats.resolvedIssues.current}%`,
+              }}
             ></div>
           </div>
-        </Card>
+        </div>
 
         {/* Issue响应率卡片 */}
-        <Card
-          className="rounded-xl shadow-sm hover:shadow-md transition-all duration-300 metric-card overflow-hidden border-0 group bg-gradient-to-br from-blue-50 to-white"
-          variant="outlined"
-          loading={issueAnalyticsLoading}
-          bodyStyle={{
-            padding: '16px',
-            backgroundColor: 'transparent',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
+        <div
+          className="rounded-lg border border-gray-100 bg-white p-4"
+          style={{ opacity: issueAnalyticsLoading ? 0.6 : 1 }}
         >
-          {/* 背景装饰元素 */}
-          <div className="absolute top-3 right-3 w-24 h-24 rounded-full bg-blue-100 opacity-20 -z-10"></div>
-          <div className="absolute bottom-2 left-2 w-16 h-16 rounded-full bg-blue-100 opacity-10 -z-10"></div>
-
-          {/* 右上角图标 */}
-          <div className="absolute right-3 top-3 z-10">
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border-2 border-blue-200">
-              <CommentOutlined className="text-[#4285F4] text-lg" />
-            </div>
-          </div>
-
           <Statistic
             title={
               <div className="flex items-center">
-                <Badge status="processing" color="#4285F4" />
+                <Badge color="#a855f7" />
                 <Text className="text-gray-600 font-medium text-sm ml-1.5">Issue响应率</Text>
                 <div className="ml-1.5">
-                  <Tag
-                    bordered={false}
-                    style={{
-                      backgroundColor: 'rgba(66, 133, 244, 0.08)',
-                      color: '#1a73e8',
-                      border: '1px dashed rgba(66, 133, 244, 0.3)',
-                      fontWeight: 500,
-                      fontSize: '10px',
-                    }}
-                  >
-                    目标值 100%
+                  <Tag bordered={false} color="purple" style={{ fontSize: '10px' }}>
+                    目标值 95%
                   </Tag>
                 </div>
               </div>
             }
             value={stats.responseRate.current}
             precision={1}
-            valueStyle={{ color: '#1a73e8', fontWeight: '600', fontSize: '2rem' }}
+            valueStyle={{ color: '#9333ea', fontWeight: '600', fontSize: '1.75rem' }}
             suffix={
               <div className="inline-flex items-center">
-                <span className="text-gray-400 text-lg">%</span>
-                <Tooltip title={`目标: ${stats.responseRate.baseline}%`}>
-                  {stats.responseRate.isGood ? (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded ml-3 flex items-center">
-                      <RiseOutlined className="mr-0.5" />
-                      {stats.responseRate.trend}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded ml-3 flex items-center">
-                      <FallOutlined className="mr-0.5" />
-                      {stats.responseRate.trend}
-                    </span>
-                  )}
-                </Tooltip>
+                <span className="text-gray-400 text-base">%</span>
+                {stats.responseRate.isGood ? (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded ml-2 flex items-center">
+                    <RiseOutlined className="mr-0.5" />
+                    {stats.responseRate.trend}
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded ml-2 flex items-center">
+                    <FallOutlined className="mr-0.5" />
+                    {stats.responseRate.trend}
+                  </span>
+                )}
               </div>
             }
           />
 
           <div className="mt-2 text-[10px] text-gray-400">
             已响应:{' '}
-            <span className="font-medium text-blue-700">{stats.responseRate.responded}</span> /
-            总数: <span className="font-medium text-blue-700">{stats.responseRate.total}</span>
+            <span className="font-medium text-purple-700">{stats.responseRate.responded}</span> /
+            总计: <span className="font-medium text-gray-600">{stats.responseRate.total}</span>
           </div>
 
-          <div className="mt-3 w-full h-1.5 bg-blue-50 rounded-full overflow-hidden">
+          {/* 进度条 */}
+          <div className="mt-3 bg-gray-100 h-1 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#4285F4] to-[#1a73e8] progress-bar-animation"
-              style={{ width: `${stats.responseRate.current}%` }}
+              className="h-full bg-purple-500 progress-bar-animation"
+              style={{
+                width: `${stats.responseRate.current > 100 ? 100 : stats.responseRate.current}%`,
+              }}
             ></div>
           </div>
-        </Card>
+        </div>
 
         {/* 48小时响应率卡片 */}
-        <Card
-          className="rounded-xl shadow-sm hover:shadow-md transition-all duration-300 metric-card overflow-hidden border-0 group bg-gradient-to-br from-blue-50 to-white"
-          variant="outlined"
-          loading={issueAnalyticsLoading}
-          bodyStyle={{
-            padding: '16px',
-            backgroundColor: 'transparent',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
+        <div
+          className="rounded-lg border border-gray-100 bg-white p-4"
+          style={{ opacity: issueAnalyticsLoading ? 0.6 : 1 }}
         >
-          {/* 背景装饰元素 */}
-          <div className="absolute top-3 right-3 w-24 h-24 rounded-full bg-blue-100 opacity-20 -z-10"></div>
-          <div className="absolute bottom-2 left-2 w-16 h-16 rounded-full bg-blue-100 opacity-10 -z-10"></div>
-
-          {/* 右上角图标 */}
-          <div className="absolute right-3 top-3 z-10">
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border-2 border-blue-200">
-              <ClockCircleOutlined className="text-[#4285F4] text-lg" />
-            </div>
-          </div>
-
           <Statistic
             title={
               <div className="flex items-center">
-                <Badge status="processing" color="#4285F4" />
+                <Badge color="#0891b2" />
                 <Text className="text-gray-600 font-medium text-sm ml-1.5">48小时响应率</Text>
                 <div className="ml-1.5">
-                  <Tag
-                    bordered={false}
-                    style={{
-                      backgroundColor: 'rgba(66, 133, 244, 0.08)',
-                      color: '#1a73e8',
-                      border: '1px dashed rgba(66, 133, 244, 0.3)',
-                      fontWeight: 500,
-                      fontSize: '10px',
-                    }}
-                  >
+                  <Tag bordered={false} color="cyan" style={{ fontSize: '10px' }}>
                     目标值 95%
                   </Tag>
                 </div>
@@ -386,78 +285,61 @@ export default function KeyMetrics() {
             }
             value={stats.responseRateUnder48h.current}
             precision={1}
-            valueStyle={{ color: '#1a73e8', fontWeight: '600', fontSize: '2rem' }}
+            valueStyle={{ color: '#0891b2', fontWeight: '600', fontSize: '1.75rem' }}
             suffix={
               <div className="inline-flex items-center">
-                <span className="text-gray-400 text-lg">%</span>
-                <Tooltip title={`目标: ${stats.responseRateUnder48h.baseline}%`}>
-                  {stats.responseRateUnder48h.isGood ? (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded ml-3 flex items-center">
-                      <RiseOutlined className="mr-0.5" />
-                      {stats.responseRateUnder48h.trend}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded ml-3 flex items-center">
-                      <FallOutlined className="mr-0.5" />
-                      {stats.responseRateUnder48h.trend}
-                    </span>
-                  )}
-                </Tooltip>
+                <span className="text-gray-400 text-base">%</span>
+                {stats.responseRateUnder48h.isGood ? (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-cyan-50 text-cyan-600 rounded ml-2 flex items-center">
+                    <RiseOutlined className="mr-0.5" />
+                    {stats.responseRateUnder48h.trend}
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded ml-2 flex items-center">
+                    <FallOutlined className="mr-0.5" />
+                    {stats.responseRateUnder48h.trend}
+                  </span>
+                )}
               </div>
             }
           />
 
           <div className="mt-2 text-[10px] text-gray-400">
             48小时内响应:{' '}
-            <span className="font-medium text-blue-700">
+            <span className="font-medium text-cyan-700">
               {stats.responseRateUnder48h.responded}
             </span>{' '}
-            / 总数:{' '}
-            <span className="font-medium text-blue-700">{stats.responseRateUnder48h.total}</span>
+            / 总计:{' '}
+            <span className="font-medium text-gray-600">{stats.responseRateUnder48h.total}</span>
           </div>
 
-          <div className="mt-3 w-full h-1.5 bg-blue-50 rounded-full overflow-hidden">
+          {/* 进度条 */}
+          <div className="mt-3 bg-gray-100 h-1 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#4285F4] to-[#1a73e8] progress-bar-animation"
-              style={{ width: `${stats.responseRateUnder48h.current}%` }}
+              className="h-full bg-cyan-500 progress-bar-animation"
+              style={{
+                width: `${
+                  stats.responseRateUnder48h.current > 100
+                    ? 100
+                    : stats.responseRateUnder48h.current
+                }%`,
+              }}
             ></div>
           </div>
-        </Card>
+        </div>
 
         {/* 文档反馈解决率卡片 */}
-        <Card
-          className="rounded-xl shadow-sm hover:shadow-md metric-card overflow-hidden border border-slate-100"
-          loading={loading || issueAnalyticsLoading}
-          variant="outlined"
-          bodyStyle={{
-            padding: '16px',
-            backgroundColor: 'white',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
+        <div
+          className="rounded-lg border border-gray-100 bg-white p-4"
+          style={{ opacity: loading ? 0.6 : 1 }}
         >
-          <div className="absolute right-3 top-3 z-10">
-            <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center">
-              <FileTextOutlined className="text-[#34A853] text-lg" />
-            </div>
-          </div>
-
           <Statistic
             title={
               <div className="flex items-center">
-                <Badge color="#34A853" />
-                <Text className="text-green-800 font-medium text-sm ml-1.5">文档反馈解决率</Text>
+                <Badge color="#16a34a" />
+                <Text className="text-gray-600 font-medium text-sm ml-1.5">文档反馈解决率</Text>
                 <div className="ml-1.5">
-                  <Tag
-                    bordered={false}
-                    style={{
-                      backgroundColor: 'rgba(52, 168, 83, 0.08)',
-                      color: '#137333',
-                      border: '1px dashed rgba(52, 168, 83, 0.3)',
-                      fontWeight: 500,
-                      fontSize: '10px',
-                    }}
-                  >
+                  <Tag bordered={false} color="green" style={{ fontSize: '10px' }}>
                     目标值 90%
                   </Tag>
                 </div>
@@ -465,40 +347,41 @@ export default function KeyMetrics() {
             }
             value={stats.resolutionRate.current}
             precision={1}
-            valueStyle={{ color: '#137333', fontWeight: '600', fontSize: '2rem' }}
+            valueStyle={{ color: '#16a34a', fontWeight: '600', fontSize: '1.75rem' }}
             suffix={
               <div className="inline-flex items-center">
-                <span className="text-green-400 text-lg">%</span>
-                <Tooltip title={`目标: ${stats.resolutionRate.baseline}%`}>
-                  {stats.resolutionRate.isGood ? (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-600 rounded ml-3 flex items-center">
-                      <RiseOutlined className="mr-0.5" />
-                      {stats.resolutionRate.trend}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded ml-3 flex items-center">
-                      <FallOutlined className="mr-0.5" />
-                      {stats.resolutionRate.trend}
-                    </span>
-                  )}
-                </Tooltip>
+                <span className="text-gray-400 text-base">%</span>
+                {stats.resolutionRate.isGood ? (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-600 rounded ml-2 flex items-center">
+                    <RiseOutlined className="mr-0.5" />
+                    {stats.resolutionRate.trend}
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded ml-2 flex items-center">
+                    <FallOutlined className="mr-0.5" />
+                    {stats.resolutionRate.trend}
+                  </span>
+                )}
               </div>
             }
           />
 
-          <div className="mt-2 text-[10px] text-green-600">
+          <div className="mt-2 text-[10px] text-gray-400">
             已解决:{' '}
-            <span className="font-medium text-green-800">{stats.resolutionRate.resolved}</span> /
-            总数: <span className="font-medium text-green-800">{stats.resolutionRate.total}</span>
+            <span className="font-medium text-green-700">{stats.resolutionRate.resolved}</span> /
+            总计: <span className="font-medium text-gray-600">{stats.resolutionRate.total}</span>
           </div>
 
-          <div className="mt-3 w-full h-1.5 bg-green-50 rounded-full overflow-hidden">
+          {/* 进度条 */}
+          <div className="mt-3 bg-gray-100 h-1 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#34A853] to-[#137333] progress-bar-animation"
-              style={{ width: `${stats.resolutionRate.current}%` }}
+              className="h-full bg-green-500 progress-bar-animation"
+              style={{
+                width: `${stats.resolutionRate.current > 100 ? 100 : stats.resolutionRate.current}%`,
+              }}
             ></div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );

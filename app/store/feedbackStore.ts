@@ -12,7 +12,7 @@ interface FeedbackState {
   data: any[] | null;
   githubIssues: any[] | null;
   issueResponseTimes: any[] | null;
-  // 新增各产品响应时间数据
+  // 新增各仓库响应时间数据
   productResponseTimes: {
     [key: string]: any[];
   };
@@ -20,7 +20,7 @@ interface FeedbackState {
   issueAnalyticsLoading: boolean;
 }
 
-// 定义所有产品
+// 定义所有仓库
 export const ALL_PRODUCTS = [
   { label: 'G', value: 'antvis/g' },
   { label: 'G2', value: 'antvis/g2' },
@@ -36,7 +36,7 @@ export const ALL_PRODUCTS = [
 // 初始化状态
 export const feedbackStore = proxy<FeedbackState>({
   filters: {
-    startDate: dayjs().subtract(7, 'days').toISOString(),
+    startDate: dayjs().startOf('month').toISOString(), // 当月第一天
     endDate: dayjs().toISOString(),
     repo: '',
   },
@@ -89,7 +89,7 @@ export async function fetchFeedbackData() {
   }
 }
 
-// 获取GitHub Issue响应时间分析 - 并发调用多个产品API
+// 获取GitHub Issue响应时间分析 - 并发调用多个仓库API
 export async function fetchIssueResponseTimes() {
   feedbackStore.issueAnalyticsLoading = true;
   feedbackStore.error = null;
@@ -97,23 +97,23 @@ export async function fetchIssueResponseTimes() {
   try {
     const selectedRepo = feedbackStore.filters.repo;
 
-    // 如果没有选择具体产品，获取所有产品数据
+    // 如果没有选择具体仓库，获取所有仓库数据
     if (!selectedRepo) {
       // 清空之前的数据
       feedbackStore.productResponseTimes = {};
       feedbackStore.issueResponseTimes = [];
 
-      // 并发请求所有产品数据
+      // 并发请求所有仓库数据
       const fetchPromises = ALL_PRODUCTS.map(product => fetchProductData(product.value));
       await Promise.all(fetchPromises);
 
-      // 合并所有产品数据为总数据
+      // 合并所有仓库数据为总数据
       const allIssues = Object.values(feedbackStore.productResponseTimes).flat();
       feedbackStore.issueResponseTimes = allIssues;
 
-      console.log(`获取了${allIssues.length}个跨产品Issues`);
+      console.log(`获取了${allIssues.length}个跨仓库Issues`);
     } else {
-      // 获取单个产品数据
+      // 获取单个仓库数据
       await fetchProductData(selectedRepo);
     }
   } catch (error) {
@@ -124,7 +124,7 @@ export async function fetchIssueResponseTimes() {
   }
 }
 
-// 获取单个产品数据
+// 获取单个仓库数据
 async function fetchProductData(repo: string) {
   console.log(feedbackStore.filters);
   try {
@@ -152,7 +152,7 @@ async function fetchProductData(repo: string) {
 
     const data = await response.json();
 
-    // 存储到对应产品的数据集
+    // 存储到对应仓库的数据集
     feedbackStore.productResponseTimes[repo] = data;
 
     // 如果是当前选择的仓库，也更新主数据集
@@ -167,7 +167,7 @@ async function fetchProductData(repo: string) {
     // 更详细的错误日志
     const errorMessage = error instanceof Error ? error.message : '未知错误';
     console.error(`获取${repo}数据错误:`, errorMessage);
-    // 确保即使单个产品请求失败也不影响其他请求
+    // 确保即使单个仓库请求失败也不影响其他请求
     feedbackStore.productResponseTimes[repo] = [];
     return [];
   }

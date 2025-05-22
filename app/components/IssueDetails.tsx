@@ -2,7 +2,7 @@
 
 import { feedbackStore } from '@/app/store/feedbackStore';
 import { LineChartOutlined } from '@ant-design/icons';
-import { Badge, Button, Card, Tabs } from 'antd';
+import { Badge, Button, Tabs } from 'antd';
 import { useSnapshot } from 'valtio';
 import IssueDataDisplay from './IssueDataDisplay';
 import IssueMetrics from './IssueMetrics';
@@ -16,7 +16,7 @@ export default function IssueDetails() {
   };
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden rounded-2xl border-0">
+    <div className="overflow-hidden">
       <Tabs
         defaultActiveKey="issue-metrics"
         type="card"
@@ -57,6 +57,6 @@ export default function IssueDetails() {
           </Button>
         }
       />
-    </Card>
+    </div>
   );
 }

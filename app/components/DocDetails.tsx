@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, Card, Tabs } from 'antd';
+import { Badge, Tabs } from 'antd';
 import { useSnapshot } from 'valtio';
 import { feedbackStore } from '../store/feedbackStore';
 import DocDataDisplay from './DocDataDisplay';
@@ -9,7 +9,7 @@ export default function DocDetails() {
   const { data } = useSnapshot(feedbackStore);
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden rounded-2xl border-0">
+    <div className="overflow-hidden">
       <Tabs
         defaultActiveKey="doc-suggestions"
         type="card"
@@ -33,6 +33,6 @@ export default function DocDetails() {
           },
         ]}
       />
-    </Card>
+    </div>
   );
 }

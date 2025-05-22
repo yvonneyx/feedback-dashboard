@@ -14,7 +14,7 @@ interface IssueDataDisplayProps {
 export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
   const { error, issueResponseTimes, issueAnalyticsLoading, filters } = useSnapshot(feedbackStore);
 
-  // 判断是否显示产品列
+  // 判断是否显示仓库列
   const showRepoColumn = !filters.repo;
 
   // 格式化数据的辅助函数
@@ -62,10 +62,10 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
       },
     ];
 
-    // 如果显示所有产品，添加产品列
+    // 如果显示所有仓库，添加仓库列
     if (showRepoColumn) {
       columns.push({
-        title: '产品',
+        title: '仓库',
         key: 'repo',
         width: 100,
         render: (_: any, record: any) => {
@@ -245,7 +245,7 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
             <div className="mb-3">
               <Space size="small">
                 <Text type="secondary" className="text-sm">
-                  显示全部产品数据
+                  显示全部仓库数据
                 </Text>
                 <Tag color="processing" className="rounded-full">
                   {getDataSource().length} 条记录

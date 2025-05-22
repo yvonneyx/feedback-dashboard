@@ -1,55 +1,30 @@
 'use client';
 
-import { feedbackStore, fetchFeedbackData, updateDateRange } from '@/app/store/feedbackStore';
-import type { TimeRangePickerProps } from 'antd';
 import { DatePicker } from 'antd';
 import type { Dayjs } from 'dayjs';
-import dayjs from 'dayjs';
-import { useSnapshot } from 'valtio';
 
 const { RangePicker } = DatePicker;
 
-export default function DateRangePicker() {
-  const snapshot = useSnapshot(feedbackStore);
+interface DateRangePickerProps {
+  value?: [Dayjs, Dayjs];
+  onChange?: (dates: [Dayjs, Dayjs]) => void;
+}
 
-  // 预设时间范围选项
-  const rangePresets: TimeRangePickerProps['presets'] = [
-    { label: '最近7天', value: [dayjs().subtract(7, 'd'), dayjs()] },
-    { label: '最近14天', value: [dayjs().subtract(14, 'd'), dayjs()] },
-    { label: '最近30天', value: [dayjs().subtract(30, 'd'), dayjs()] },
-    { label: '最近90天', value: [dayjs().subtract(90, 'd'), dayjs()] },
-    { label: '本月', value: [dayjs().startOf('month'), dayjs()] },
-    {
-      label: '上个月',
-      value: [
-        dayjs().subtract(1, 'month').startOf('month'),
-        dayjs().subtract(1, 'month').endOf('month'),
-      ],
-    },
-  ];
-
+export default function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   // 处理日期范围变化
-  const onRangeChange = (dates: null | (Dayjs | null)[]) => {
-    if (dates && dates[0] && dates[1]) {
-      updateDateRange(dates[0].toISOString(), dates[1].toISOString());
-      fetchFeedbackData();
+  const handleDateChange = (dates: null | (Dayjs | null)[]) => {
+    if (dates && dates[0] && dates[1] && onChange) {
+      onChange([dates[0], dates[1]] as [Dayjs, Dayjs]);
     }
   };
 
   return (
-    <div className="w-full">
-      <h2 className="text-xs text-gray-500 mb-2 font-medium">时间段筛选</h2>
-      <div className="py-2 px-3 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-100 shadow-inner hover:bg-white/80 transition-all duration-300">
-        <RangePicker
-          presets={rangePresets}
-          onChange={onRangeChange}
-          className="w-full rounded-lg transition-all duration-300 filter-component"
-          defaultValue={[dayjs(snapshot.filters.startDate), dayjs(snapshot.filters.endDate)]}
-          allowClear={false}
-          variant="borderless"
-          size="middle"
-        />
-      </div>
-    </div>
+    <RangePicker
+      className="w-full"
+      value={value}
+      onChange={handleDateChange}
+      allowClear={false}
+      placeholder={['开始日期', '结束日期']}
+    />
   );
 }

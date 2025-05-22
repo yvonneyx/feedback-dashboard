@@ -1,14 +1,34 @@
 'use client';
 
 import { feedbackStore, fetchFeedbackData } from '@/app/store/feedbackStore';
+import { DislikeOutlined, LikeOutlined } from '@ant-design/icons';
 import { Button, Empty, message, Spin, Table, Tag, Tooltip, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 import { useSnapshot } from 'valtio';
 
-const { Link } = Typography;
+const { Link, Text } = Typography;
 
 interface DocDataDisplayProps {
   dataType: 'doc-suggestions' | 'page-ratings';
+}
+
+interface DocFeedbackItem {
+  objectId: string;
+  createdAt: string;
+  repo: string;
+  url: string;
+  title: string;
+  comment: string;
+  isResolved: string;
+}
+
+interface PageRatingItem {
+  url: string;
+  repo: string;
+  comments: string[];
+  goodReviews: number;
+  badReviews: number;
 }
 
 export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
@@ -57,18 +77,29 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
       });
   };
 
+  // 计算页面评价统计数据
+  const calculateRatingStats = () => {
+    if (!data) return { totalGood: 0, totalBad: 0 };
+
+    const ratingData = data.filter(item => item.rating);
+    const totalGood = ratingData.filter(item => item.rating === '1').length;
+    const totalBad = ratingData.filter(item => item.rating === '0').length;
+
+    return { totalGood, totalBad };
+  };
+
   // 文档反馈明细表格列定义
-  const docFeedbackColumns = [
+  const docFeedbackColumns: ColumnsType<DocFeedbackItem> = [
     {
       title: '提交时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 150,
       render: (text: string) => formatDate(text),
-      sorter: (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     },
     {
-      title: '产品',
+      title: '仓库',
       dataIndex: 'repo',
       key: 'repo',
       render: (text: string) => (
@@ -87,7 +118,7 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
         { text: 'AVA', value: 'antvis/ava' },
         { text: 'ADC', value: 'ant-design/ant-design-charts' },
       ],
-      onFilter: (value: string, record: any) => record.repo?.includes(value),
+      onFilter: (value, record) => record.repo?.includes(value as string),
     },
     {
       title: '访问地址',
@@ -131,12 +162,12 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
         { text: '已解决', value: '1' },
         { text: '未解决', value: '0' },
       ],
-      onFilter: (value: string, record: any) => record.isResolved === value,
+      onFilter: (value, record) => record.isResolved === (value as string),
     },
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: any) => {
+      render: (_, record) => {
         const isProcessing = processingIds.includes(record.objectId);
 
         return record.isResolved === '1' ? (
@@ -162,9 +193,9 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
   ];
 
   // 页面评价表格列
-  const pageRatingColumns = [
+  const pageRatingColumns: ColumnsType<PageRatingItem> = [
     {
-      title: '产品',
+      title: '仓库',
       dataIndex: 'repo',
       key: 'repo',
       width: 80,
@@ -184,7 +215,7 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
         { text: 'AVA', value: 'antvis/ava' },
         { text: 'ADC', value: 'ant-design/ant-design-charts' },
       ],
-      onFilter: (value: string, record: any) => record.repo?.includes(value),
+      onFilter: (value, record) => record.repo?.includes(value as string),
     },
     {
       title: '页面路径',
@@ -203,7 +234,7 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
       title: '评价',
       dataIndex: 'goodReviews',
       key: 'goodReviews',
-      render: (text: string, record: any) => `👍 ${text} 👎 ${record.badReviews}`,
+      render: (text: number, record) => `👍 ${text} 👎 ${record.badReviews}`,
     },
     {
       title: '评论',
@@ -236,7 +267,7 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
         return Object.values(
           data
             .filter(item => item.rating)
-            .reduce((acc, item) => {
+            .reduce((acc: Record<string, PageRatingItem>, item) => {
               const url = decodeURI(item.url).split('/').slice(3).join('/');
               if (!acc[url]) {
                 acc[url] = {
@@ -252,7 +283,7 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
               } else {
                 acc[url].badReviews += 1;
               }
-              if (!acc[url].comments.includes(item.reason)) {
+              if (item.reason && !acc[url].comments.includes(item.reason)) {
                 acc[url].comments.push(item.reason);
               }
               return acc;
@@ -274,6 +305,58 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
     />
   );
 
+  // 渲染页面评价统计信息
+  const renderRatingStats = () => {
+    if (dataType !== 'page-ratings') return null;
+
+    const { totalGood, totalBad } = calculateRatingStats();
+    const totalRatings = totalGood + totalBad;
+    const goodPercentage = totalRatings > 0 ? Math.round((totalGood / totalRatings) * 100) : 0;
+
+    return (
+      <div className="mb-4">
+        <div className="bg-slate-50 rounded-lg p-3 border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 mr-2">
+                  <LikeOutlined className="text-slate-600 text-sm" />
+                </div>
+                <div>
+                  <Text className="text-slate-400 text-xs">有用</Text>
+                  <div className="font-medium text-slate-700">{totalGood}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 mr-2">
+                  <DislikeOutlined className="text-slate-600 text-sm" />
+                </div>
+                <div>
+                  <Text className="text-slate-400 text-xs">待改进</Text>
+                  <div className="font-medium text-slate-700">{totalBad}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 mr-2">
+                  <span className="text-slate-700 text-sm">{goodPercentage}%</span>
+                </div>
+                <div>
+                  <Text className="text-slate-400 text-xs">满意度</Text>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <Text className="text-xs text-slate-400">总计 {totalRatings} 个评价</Text>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="overflow-x-auto rounded-xl">
       {loading ? (
@@ -283,18 +366,21 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
       ) : getDataSource().length === 0 && !error ? (
         renderEmptyState()
       ) : (
-        <Table
-          dataSource={getDataSource()}
-          rowKey="objectId"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: total => `共 ${total} 条记录`,
-          }}
-          columns={getColumns() as any}
-          className="custom-table w-full"
-        />
+        <>
+          {renderRatingStats()}
+          <Table
+            dataSource={getDataSource()}
+            columns={getColumns()}
+            rowKey={record => record.objectId || record.url}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: total => `共 ${total} 条记录`,
+            }}
+            className="rounded-lg border border-gray-100 overflow-hidden"
+          />
+        </>
       )}
     </div>
   );

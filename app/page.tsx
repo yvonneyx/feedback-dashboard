@@ -7,14 +7,9 @@ import {
   fetchFeedbackData,
   fetchIssueResponseTimes,
 } from '@/app/store/feedbackStore';
-import {
-  FileTextOutlined,
-  GithubOutlined,
-  LineChartOutlined,
-  TeamOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
-import { Alert, Button, Card, Divider, Tabs, Typography } from 'antd';
+import { LineChartOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
+import { Alert, Button, Card, Divider, Typography } from 'antd';
+import dayjs, { Dayjs } from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useSnapshot } from 'valtio';
 import DocDetails from './components/DocDetails';
@@ -24,144 +19,191 @@ import KeyMetrics from './components/KeyMetrics';
 const { Title, Text } = Typography;
 
 export default function Home() {
-  const { filters, error } = useSnapshot(feedbackStore);
-  const [activeTab, setActiveTab] = useState('issue-details');
+  const { filters, error, loading } = useSnapshot(feedbackStore);
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
+    dayjs(filters.startDate),
+    dayjs(filters.endDate),
+  ]);
+  const [selectedRepo, setSelectedRepo] = useState<string>(filters.repo);
 
+  // 仅在首次加载时获取数据
   useEffect(() => {
+    // 初始数据加载
     fetchFeedbackData();
     fetchIssueResponseTimes();
-  }, [filters.repo, filters.startDate, filters.endDate]);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 处理日期范围变化
+  const handleDateChange = (dates: [Dayjs, Dayjs]) => {
+    if (dates && dates[0] && dates[1]) {
+      setDateRange(dates);
+    }
+  };
+
+  // 处理仓库选择变化
+  const handleRepoChange = (value: string) => {
+    setSelectedRepo(value);
+  };
+
+  // 应用筛选条件
+  const handleApplyFilter = () => {
+    // 更新 store 中的筛选条件
+    feedbackStore.filters.startDate = dateRange[0].toISOString();
+    feedbackStore.filters.endDate = dateRange[1].toISOString();
+    feedbackStore.filters.repo = selectedRepo;
+
+    // 触发数据加载
+    fetchFeedbackData();
+    fetchIssueResponseTimes();
+  };
+
+  // 格式化日期显示
+  const formatDateRange = () => {
+    const startDate = dayjs(filters.startDate).format('YYYY年MM月DD日');
+    const endDate = dayjs(filters.endDate).format('YYYY年MM月DD日');
+    return `${startDate} - ${endDate}`;
+  };
 
   return (
-    <div className="min-h-screen bg-[#F5F7FF] text-slate-700 font-['Inter',system-ui,sans-serif] texture-bg">
-      {/* 顶部装饰彩带 - 更细致一些 */}
-      <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 shadow-sm"></div>
-
+    <div
+      className="min-h-screen text-slate-700 font-['Inter',system-ui,sans-serif]"
+      style={{
+        background:
+          "url('https://mass-office.alipay.com/huamei_koqzbu/afts/img/kiZORZ0SvXkAAAAAAAAAABAADnV5AQBr/original') center center / cover no-repeat",
+        minWidth: '1200px',
+        overflowX: 'auto',
+      }}
+    >
       {/* 整体布局容器 */}
       <div className="py-6 px-4 md:px-6 max-w-7xl mx-auto fade-in">
-        {/* 页面标题和筛选区域 */}
-        <header className="mb-6 relative fade-in" style={{ animationDelay: '0.1s' }}>
-          <div className="flex flex-col md:flex-row items-center justify-between mb-5 gap-4">
-            <div className="flex items-center">
-              <div
-                className="bg-indigo-500/10 p-2.5 rounded-lg mr-3 shadow-sm pulse-animation"
-                style={{ animationDuration: '3s' }}
-              >
-                <LineChartOutlined className="text-xl text-indigo-500" />
+        {/* 大容器卡片 */}
+        <Card
+          className="rounded-xl border-0 shadow-lg overflow-hidden mb-6"
+          bodyStyle={{ padding: '24px' }}
+          style={{ backgroundColor: '#FAFCFD' }}
+        >
+          {/* 页面标题和导航区域 */}
+          <div className="mb-6">
+            <div className="flex flex-col md:flex-row items-center justify-between mb-5 gap-4">
+              <div className="flex items-center">
+                <div
+                  className="bg-indigo-500/10 p-2.5 rounded-lg mr-3 shadow-sm pulse-animation"
+                  style={{ animationDuration: '3s' }}
+                >
+                  <LineChartOutlined className="text-xl text-indigo-500" />
+                </div>
+                <div>
+                  <Title level={4} className="mb-0 mt-0 font-bold text-slate-800">
+                    AntV 社区答疑看板
+                  </Title>
+                  <Text type="secondary" className="text-xs">
+                    统计范围：{formatDateRange()}
+                  </Text>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  icon={<UserOutlined />}
+                  className="rounded-lg shadow-sm transition-all duration-300"
+                  size="middle"
+                  onClick={() => (window.location.href = '/contributors')}
+                >
+                  贡献者统计
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<TeamOutlined />}
+                  className="rounded-lg shadow-sm transition-all duration-300 border-0 bg-gradient-to-r from-indigo-500 to-blue-500 hover:opacity-90"
+                  size="middle"
+                  onClick={() =>
+                    window.open(
+                      'https://deepinsight.alipay.com/view.htm?reportId=D2025030600161401000023955562',
+                      '_blank'
+                    )
+                  }
+                >
+                  查看内部答疑看板
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <Divider className="my-6" />
+
+          {/* 筛选器 */}
+          <div className="mb-6">
+            <div className="flex flex-col md:flex-row gap-4 items-end">
+              <div className="flex-1">
+                <div className="text-sm text-gray-600 mb-2">日期范围</div>
+                <div className="w-full">
+                  <DateRangePicker value={dateRange} onChange={handleDateChange} />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="text-sm text-gray-600 mb-2">选择仓库</div>
+                <div className="w-full">
+                  <TechStackFilter value={selectedRepo} onChange={handleRepoChange} />
+                </div>
               </div>
               <div>
-                <Title level={4} className="mb-0 mt-0 font-bold text-slate-800">
-                  AntV 社区答疑看板
-                </Title>
-                <Text type="secondary" className="text-xs">
-                  数据更新至{' '}
-                  {new Date().toLocaleDateString('zh-CN', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </Text>
+                <Button
+                  type="primary"
+                  onClick={handleApplyFilter}
+                  loading={loading}
+                  className="bg-gradient-to-r from-indigo-500 to-blue-500 border-0 hover:opacity-90"
+                >
+                  应用筛选
+                </Button>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button
-                icon={<UserOutlined />}
-                className="rounded-lg shadow-sm transition-all duration-300"
-                size="middle"
-                onClick={() => (window.location.href = '/contributors')}
-              >
-                贡献者统计
-              </Button>
-              <Button
-                type="primary"
-                icon={<TeamOutlined />}
-                className="rounded-lg shadow-sm transition-all duration-300 border-0 bg-gradient-to-r from-indigo-500 to-blue-500 hover:opacity-90"
-                size="middle"
-                onClick={() =>
-                  window.open(
-                    'https://deepinsight.alipay.com/view.htm?reportId=D2025030600161401000023955562',
-                    '_blank'
-                  )
-                }
-              >
-                查看内部答疑看板
-              </Button>
-            </div>
           </div>
 
-          <Card
-            className="rounded-xl border-0 shadow-md overflow-hidden"
-            bodyStyle={{ padding: '16px' }}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <TechStackFilter />
-              <DateRangePicker />
+          {/* 错误提示 */}
+          {error && (
+            <div className="mb-4">
+              <Alert
+                description={error}
+                type="info"
+                showIcon
+                className="rounded-xl border-0 shadow-sm animate-fadeIn"
+              />
             </div>
-          </Card>
-        </header>
+          )}
 
-        {/* 关键指标 */}
-        <div className="transition-all duration-300">
-          <KeyMetrics />
-        </div>
-
-        {error && (
-          <div className="mb-4">
-            <Alert
-              description={error}
-              type="info"
-              showIcon
-              className="rounded-xl border-0 shadow-sm animate-fadeIn"
-            />
+          {/* 关键指标 */}
+          <div className="mb-6 mt-4">
+            <KeyMetrics />
           </div>
-        )}
 
-        {/* 标签页内容区 */}
-        <Card
-          className="rounded-xl border-0 shadow-md overflow-hidden hover:shadow-lg transition-all duration-300"
-          bodyStyle={{ padding: 0 }}
-        >
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            type="card"
-            className="custom-tabs data-tabs"
-            tabBarStyle={{
-              background: 'linear-gradient(to right, rgba(237,242,255,0.7), rgba(224,231,255,0.5))',
-              padding: '12px 16px 0',
-              marginBottom: 0,
-            }}
-            items={[
-              {
-                key: 'issue-details',
-                label: (
-                  <span className="flex items-center px-3 py-1.5">
-                    <GithubOutlined className="mr-2" />
-                    Issue 处理
-                  </span>
-                ),
-                children: (
-                  <div className="p-4">
-                    <IssueDetails />
-                  </div>
-                ),
-              },
-              {
-                key: 'doc-details',
-                label: (
-                  <span className="flex items-center px-3 py-1.5">
-                    <FileTextOutlined className="mr-2" />
-                    文档用户反馈
-                  </span>
-                ),
-                children: (
-                  <div className="p-4">
-                    <DocDetails />
-                  </div>
-                ),
-              },
-            ]}
-          />
+          <Divider className="my-6" />
+
+          {/* Issue处理区域 */}
+          <div className="mb-8">
+            <Text
+              strong
+              className="text-base mb-3 block text-slate-700"
+              style={{ fontSize: '16px' }}
+            >
+              Issue 处理
+            </Text>
+            <IssueDetails />
+          </div>
+
+          <Divider className="my-6" />
+
+          {/* 文档用户反馈区域 */}
+          <div>
+            <Text
+              strong
+              className="text-base mb-3 block text-slate-700"
+              style={{ fontSize: '16px' }}
+            >
+              文档用户反馈
+            </Text>
+            <DocDetails />
+          </div>
         </Card>
 
         <footer className="mt-8 mb-6 text-center text-gray-500 text-xs">

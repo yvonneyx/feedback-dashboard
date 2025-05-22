@@ -1,7 +1,6 @@
 'use client';
 
-import { CheckCircleOutlined, InfoCircleOutlined, MessageOutlined } from '@ant-design/icons';
-import { Badge, Card, Empty, Progress, Spin, Statistic, Table, Tooltip, Typography } from 'antd';
+import { Badge, Card, Empty, Progress, Spin, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useSnapshot } from 'valtio';
 import { feedbackStore } from '../store/feedbackStore';
@@ -76,7 +75,7 @@ export default function IssueMetrics() {
 
   const metrics = calculateMetrics();
 
-  // 各产品的响应时间对比数据
+  // 各仓库的响应时间对比数据
   const getProductComparisonData = () => {
     if (!productResponseTimes || Object.keys(productResponseTimes).length === 0) {
       return [];
@@ -100,7 +99,7 @@ export default function IssueMetrics() {
 
         const responseRate = total > 0 ? Math.round((respondedUnder48h / total) * 100) : 0;
 
-        // 提取产品名称
+        // 提取仓库名称
         const productName = repo.split('/').pop()?.toUpperCase() || repo;
 
         return {
@@ -119,7 +118,7 @@ export default function IssueMetrics() {
 
   const comparisonColumns = [
     {
-      title: '产品',
+      title: '仓库',
       dataIndex: 'product',
       key: 'product',
       width: 150,
@@ -190,129 +189,111 @@ export default function IssueMetrics() {
       {/* 顶部卡片统计 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card
-          className="rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all"
-          loading={issueAnalyticsLoading}
-          bodyStyle={{ padding: '16px' }}
+          className="rounded-lg border border-gray-100 bg-white"
+          bodyStyle={{ padding: '14px' }}
         >
-          <div className="flex items-start justify-between">
-            <Statistic
-              title={
-                <span className="text-gray-500 text-xs font-medium flex items-center">
-                  <Badge status="processing" color="#4f46e5" className="mr-1" />
-                  <div className="ml-1">已解决 Issue 数量</div>
-                </span>
-              }
-              value={metrics.closedIssues}
-              suffix={<span className="text-gray-400 text-sm">/ {metrics.totalIssues}</span>}
-              valueStyle={{ color: '#4f46e5', fontWeight: 600, fontSize: '1.75rem' }}
-            />
-            <Tooltip title="已解决的 Issue 数量及占比">
-              <InfoCircleOutlined className="text-gray-400 mt-1" />
-            </Tooltip>
-          </div>
-          <div className="mt-3">
-            <Progress
-              percent={metrics.closureRate}
-              size="small"
-              strokeColor={{
-                '0%': '#818cf8',
-                '100%': '#4f46e5',
-              }}
-              className="mb-1"
-            />
-            <div className="flex items-center text-xs text-gray-500 mt-1">
-              <CheckCircleOutlined className="mr-1 text-indigo-500" />
-              <span>解决率 {metrics.closureRate}%</span>
+          <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center">
+              <Badge color="#4f46e5" />
+              <Text className="text-gray-600 text-xs font-medium ml-1.5">已解决 Issue</Text>
             </div>
+            <Badge
+              className="bg-indigo-100 text-indigo-600 rounded-full px-1.5 py-0.5"
+              count={`${metrics.closureRate}%`}
+              style={{ backgroundColor: '#eef2ff', color: '#4f46e5' }}
+            />
           </div>
-        </Card>
 
-        {/* 新增已响应 Issue 卡片 */}
-        <Card
-          className="rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all"
-          loading={issueAnalyticsLoading}
-          bodyStyle={{ padding: '16px' }}
-        >
-          <div className="flex items-start justify-between">
-            <Statistic
-              title={
-                <span className="text-gray-500 text-xs font-medium flex items-center">
-                  <Badge status="processing" color="#3b82f6" className="mr-1" />
-                  <div className="ml-1">已响应 Issue 数量</div>
-                </span>
-              }
-              value={metrics.respondedIssues}
-              suffix={<span className="text-gray-400 text-sm">/ {metrics.totalIssues}</span>}
-              valueStyle={{ color: '#3b82f6', fontWeight: 600, fontSize: '1.75rem' }}
-            />
-            <Tooltip title="已收到社区成员响应的 Issue 数量及占比">
-              <InfoCircleOutlined className="text-gray-400 mt-1" />
-            </Tooltip>
+          <div className="flex items-baseline mt-1">
+            <span className="text-indigo-700 font-semibold text-xl">{metrics.closedIssues}</span>
+            <span className="text-gray-400 text-xs ml-1.5">/ {metrics.totalIssues}</span>
           </div>
-          <div className="mt-3">
-            <Progress
-              percent={metrics.responseRate}
-              size="small"
-              strokeColor={{
-                '0%': '#60a5fa',
-                '100%': '#2563eb',
-              }}
-              className="mb-1"
-            />
-            <div className="flex items-center text-xs text-gray-500 mt-1">
-              <MessageOutlined className="mr-1 text-blue-500" />
-              <span>响应率 {metrics.responseRate}%</span>
-            </div>
-          </div>
+
+          <Progress
+            percent={metrics.closureRate}
+            size="small"
+            strokeColor="#4f46e5"
+            className="mt-2 mb-0"
+            showInfo={false}
+          />
         </Card>
 
         <Card
-          className="rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all"
-          loading={issueAnalyticsLoading}
-          bodyStyle={{ padding: '16px' }}
+          className="rounded-lg border border-gray-100 bg-white"
+          bodyStyle={{ padding: '14px' }}
         >
-          <div className="flex items-start justify-between">
-            <Statistic
-              title={
-                <span className="text-gray-500 text-xs font-medium flex items-center">
-                  <Badge status="processing" color="#10b981" className="mr-1" />
-                  <div className="ml-1">48小时响应率</div>
-                </span>
-              }
-              value={metrics.responseRateUnder48h}
-              suffix="%"
-              valueStyle={{ color: '#10b981', fontWeight: 600, fontSize: '1.75rem' }}
-            />
-            <Tooltip title="48小时内回复的 Issue 百分比">
-              <InfoCircleOutlined className="text-gray-400 mt-1" />
-            </Tooltip>
-          </div>
-          <div className="mt-3">
-            <Progress
-              percent={metrics.responseRateUnder48h}
-              size="small"
-              strokeColor={{
-                '0%': '#0ed895',
-                '100%': '#10b981',
-              }}
-              className="mb-1"
-            />
-
-            <div className="flex items-center text-xs text-gray-500 mt-1">
-              <CheckCircleOutlined className="mr-1 text-emerald-500" />
-              <span>目标: 95% 以上</span>
+          <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center">
+              <Badge color="#3b82f6" />
+              <Text className="text-gray-600 text-xs font-medium ml-1.5">已响应 Issue</Text>
             </div>
+            <Badge
+              className="bg-blue-100 text-blue-600 rounded-full px-1.5 py-0.5"
+              count={`${metrics.responseRate}%`}
+              style={{ backgroundColor: '#dbeafe', color: '#3b82f6' }}
+            />
           </div>
+
+          <div className="flex items-baseline mt-1">
+            <span className="text-blue-600 font-semibold text-xl">{metrics.respondedIssues}</span>
+            <span className="text-gray-400 text-xs ml-1.5">/ {metrics.totalIssues}</span>
+          </div>
+
+          <Progress
+            percent={metrics.responseRate}
+            size="small"
+            strokeColor="#3b82f6"
+            className="mt-2 mb-0"
+            showInfo={false}
+          />
+        </Card>
+
+        <Card
+          className="rounded-lg border border-gray-100 bg-white"
+          bodyStyle={{ padding: '14px' }}
+        >
+          <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center">
+              <Badge color="#10b981" />
+              <Text className="text-gray-600 text-xs font-medium ml-1.5">48小时响应率</Text>
+            </div>
+            <Badge
+              className="bg-emerald-100 text-emerald-600 rounded-full px-1.5 py-0.5"
+              count={`${metrics.responseRateUnder48h}%`}
+              style={{ backgroundColor: '#d1fae5', color: '#10b981' }}
+            />
+          </div>
+
+          <div className="flex items-baseline mt-1">
+            <span className="text-emerald-600 font-semibold text-xl">
+              {
+                issueResponseTimes?.filter(
+                  issue =>
+                    issue.hasResponse &&
+                    issue.responseTimeInHours !== null &&
+                    issue.responseTimeInHours <= 48
+                ).length
+              }
+            </span>
+            <span className="text-gray-400 text-xs ml-1.5">/ {metrics.totalIssues}</span>
+          </div>
+
+          <Progress
+            percent={metrics.responseRateUnder48h}
+            size="small"
+            strokeColor="#10b981"
+            className="mt-2 mb-0"
+            showInfo={false}
+          />
         </Card>
       </div>
 
-      {/* 产品对比分析 */}
+      {/* 仓库对比分析 */}
       <Card
-        className="rounded-xl border border-slate-100 shadow-sm"
-        loading={issueAnalyticsLoading}
+        className="rounded-lg border border-gray-100"
         title={
           <div className="flex items-center text-slate-700">
-            <span className="text-base font-medium">产品响应率对比</span>
+            <span className="text-sm font-medium">仓库响应率对比</span>
             <span className="text-xs text-gray-500 ml-2">
               ({dayjs(filters.startDate).format('MM/DD')} - {dayjs(filters.endDate).format('MM/DD')}
               )

@@ -80,7 +80,7 @@ export async function fetchContributors() {
     const repos =
       contributorsStore.filters.repos.length > 0
         ? contributorsStore.filters.repos
-        : ALL_PRODUCTS.map(product => product.value); // 如果未选择，则查询所有产品
+        : ALL_PRODUCTS.map(product => product.value); // 如果未选择，则查询所有仓库
 
     const response = await fetch('/api/contributors', {
       method: 'POST',
