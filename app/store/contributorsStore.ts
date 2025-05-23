@@ -83,7 +83,7 @@ export function updateSelectedRepos(repos: string[]) {
 }
 
 // 获取贡献者数据
-export async function fetchContributors() {
+export async function fetchContributors(retryCount = 0) {
   contributorsStore.loading = true;
   contributorsStore.error = null;
 
@@ -92,6 +92,12 @@ export async function fetchContributors() {
       contributorsStore.filters.repos.length > 0
         ? contributorsStore.filters.repos
         : ALL_PRODUCTS.map(product => product.value); // 如果未选择，则查询所有仓库
+
+    console.log(`开始获取贡献者数据，选择了${repos.length}个仓库`);
+
+    // 设置请求超时
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3分钟超时
 
     const response = await fetch('/api/contributors', {
       method: 'POST',
@@ -103,7 +109,11 @@ export async function fetchContributors() {
         endDate: contributorsStore.filters.endDate,
         repos: repos,
       }),
+      signal: controller.signal,
     });
+
+    // 清除超时计时器
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`获取贡献者数据失败: ${response.status} ${response.statusText}`);
@@ -116,11 +126,30 @@ export async function fetchContributors() {
     calculateStats(data);
 
     console.log(`获取了${data.length}个贡献者数据`);
-  } catch (error) {
+  } catch (error: any) {
+    // 如果是超时或网络错误，尝试重试
+    if (
+      (error.name === 'AbortError' ||
+        error.message.includes('504') ||
+        error.message.includes('timeout')) &&
+      retryCount < 2
+    ) {
+      console.log(`请求超时或网络错误，正在进行第${retryCount + 1}次重试...`);
+      contributorsStore.error = `数据加载中，正在进行第${retryCount + 1}次重试...`;
+
+      // 延迟重试
+      setTimeout(() => {
+        fetchContributors(retryCount + 1);
+      }, 3000);
+      return;
+    }
+
     contributorsStore.error = error instanceof Error ? error.message : '未知错误';
     console.error('获取贡献者数据错误:', error);
   } finally {
-    contributorsStore.loading = false;
+    if (contributorsStore.error !== `数据加载中，正在进行第${retryCount + 1}次重试...`) {
+      contributorsStore.loading = false;
+    }
   }
 }
 

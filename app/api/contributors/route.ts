@@ -2,7 +2,7 @@ import { Octokit } from '@octokit/rest';
 import { NextResponse } from 'next/server';
 
 // 直接设置API超时常量
-const API_TIMEOUT = 120000; // 默认120秒
+const API_TIMEOUT = 180000; // 增加到180秒
 
 // 配置GitHub API客户端，增加重试和超时配置
 const octokit = new Octokit({
@@ -15,7 +15,7 @@ const octokit = new Octokit({
 // 设置 API 路由配置
 export const config = {
   runtime: 'nodejs',
-  maxDuration: 300, // 设置最大执行时间为300秒(5分钟)
+  maxDuration: 600, // 增加到600秒(10分钟)
 };
 
 // 定义贡献者角色
@@ -62,100 +62,135 @@ export async function POST(request: Request) {
 
 // 获取多个仓库的所有贡献者
 async function fetchAllContributors(repos: string[], startDate: string, endDate: string) {
+  console.log(`开始获取${repos.length}个仓库的贡献者数据，时间范围: ${startDate} - ${endDate}`);
   const contributorsMap = new Map<string, Contributor>();
   // PR计数映射表，用于统计每个用户提交的PR数量
   const prCountMap = new Map<string, number>();
 
-  // 获取维护者列表（仓库协作者）
+  // 获取维护者列表（仓库协作者） - 并发请求
+  console.log('获取所有仓库的维护者列表...');
   const maintainersMap = new Map<string, Set<string>>();
-  for (const repo of repos) {
+  const maintainerPromises = repos.map(async repo => {
     const [owner, repoName] = repo.split('/');
-    const maintainers = await fetchRepoMaintainers(owner, repoName);
-    maintainersMap.set(repo, new Set(maintainers));
-  }
-
-  // 获取指定时间段内的提交数据
-  for (const repo of repos) {
-    const [owner, repoName] = repo.split('/');
-
-    // 获取仓库提交记录
-    const commits = await fetchCommits(owner, repoName, startDate, endDate);
-
-    // 提取贡献者信息
-    for (const commit of commits) {
-      if (!commit.author || !commit.author.login) continue;
-
-      const login = commit.author.login;
-      const isMaintainer = maintainersMap.get(repo)?.has(login) || false;
-
-      // 更新或创建贡献者记录
-      if (contributorsMap.has(login)) {
-        const contributor = contributorsMap.get(login)!;
-        contributor.contributions += 1;
-
-        // 添加新的仓库（如果尚未存在）
-        if (!contributor.repos.includes(repo)) {
-          contributor.repos.push(repo);
-        }
-
-        // 更新维护者状态
-        if (isMaintainer && !contributor.is_maintainer) {
-          contributor.is_maintainer = true;
-        }
-      } else {
-        contributorsMap.set(login, {
-          login: login,
-          id: commit.author.id,
-          avatar_url: commit.author.avatar_url,
-          html_url: commit.author.html_url,
-          contributions: 1,
-          role: 'CONTRIBUTOR', // 默认角色
-          repos: [repo],
-          is_maintainer: isMaintainer,
-          pull_requests: 0, // 初始化PR数量为0
-        });
-      }
+    try {
+      const maintainers = await fetchRepoMaintainers(owner, repoName);
+      maintainersMap.set(repo, new Set(maintainers));
+      console.log(`获取到 ${repo} 的维护者: ${maintainers.length}人`);
+    } catch (error) {
+      console.error(`获取 ${repo} 维护者失败:`, error);
+      maintainersMap.set(repo, new Set());
     }
+  });
 
-    // 通过PR获取更详细的贡献者信息
-    const pullRequests = await fetchPullRequests(owner, repoName, startDate, endDate);
-    for (const pr of pullRequests) {
-      if (!pr.user || !pr.user.login) continue;
+  // 等待所有维护者信息获取完成
+  await Promise.all(maintainerPromises);
+  console.log('所有维护者信息获取完成');
 
-      const login = pr.user.login;
-      const isMaintainer = maintainersMap.get(repo)?.has(login) || false;
+  // 分批处理仓库，每批5个仓库
+  const batchSize = 5;
+  for (let i = 0; i < repos.length; i += batchSize) {
+    const batchRepos = repos.slice(i, i + batchSize);
+    console.log(`处理第${i / batchSize + 1}批仓库: ${batchRepos.join(', ')}`);
 
-      // 更新PR计数
-      prCountMap.set(login, (prCountMap.get(login) || 0) + 1);
+    // 并发获取每个仓库的数据
+    const batchPromises = batchRepos.map(async repo => {
+      const [owner, repoName] = repo.split('/');
+      console.log(`开始处理仓库: ${repo}`);
 
-      // 更新或创建贡献者记录
-      if (contributorsMap.has(login)) {
-        const contributor = contributorsMap.get(login)!;
-        contributor.contributions += 1;
+      try {
+        // 获取仓库提交记录
+        console.log(`获取 ${repo} 的提交记录...`);
+        const commits = await fetchCommits(owner, repoName, startDate, endDate);
+        console.log(`获取到 ${repo} 的提交: ${commits.length}条`);
 
-        // 添加新的仓库（如果尚未存在）
-        if (!contributor.repos.includes(repo)) {
-          contributor.repos.push(repo);
+        // 提取贡献者信息
+        for (const commit of commits) {
+          if (!commit.author || !commit.author.login) continue;
+
+          const login = commit.author.login;
+          const isMaintainer = maintainersMap.get(repo)?.has(login) || false;
+
+          // 更新或创建贡献者记录
+          if (contributorsMap.has(login)) {
+            const contributor = contributorsMap.get(login)!;
+            contributor.contributions += 1;
+
+            // 添加新的仓库（如果尚未存在）
+            if (!contributor.repos.includes(repo)) {
+              contributor.repos.push(repo);
+            }
+
+            // 更新维护者状态
+            if (isMaintainer && !contributor.is_maintainer) {
+              contributor.is_maintainer = true;
+            }
+          } else {
+            contributorsMap.set(login, {
+              login: login,
+              id: commit.author.id,
+              avatar_url: commit.author.avatar_url,
+              html_url: commit.author.html_url,
+              contributions: 1,
+              role: 'CONTRIBUTOR', // 默认角色
+              repos: [repo],
+              is_maintainer: isMaintainer,
+              pull_requests: 0, // 初始化PR数量为0
+            });
+          }
         }
 
-        // 更新维护者状态
-        if (isMaintainer && !contributor.is_maintainer) {
-          contributor.is_maintainer = true;
+        // 通过PR获取更详细的贡献者信息
+        console.log(`获取 ${repo} 的PR记录...`);
+        const pullRequests = await fetchPullRequests(owner, repoName, startDate, endDate);
+        console.log(`获取到 ${repo} 的PR: ${pullRequests.length}条`);
+
+        for (const pr of pullRequests) {
+          if (!pr.user || !pr.user.login) continue;
+
+          const login = pr.user.login;
+          const isMaintainer = maintainersMap.get(repo)?.has(login) || false;
+
+          // 更新PR计数
+          prCountMap.set(login, (prCountMap.get(login) || 0) + 1);
+
+          // 更新或创建贡献者记录
+          if (contributorsMap.has(login)) {
+            const contributor = contributorsMap.get(login)!;
+            contributor.contributions += 1;
+
+            // 添加新的仓库（如果尚未存在）
+            if (!contributor.repos.includes(repo)) {
+              contributor.repos.push(repo);
+            }
+
+            // 更新维护者状态
+            if (isMaintainer && !contributor.is_maintainer) {
+              contributor.is_maintainer = true;
+            }
+          } else {
+            contributorsMap.set(login, {
+              login: login,
+              id: pr.user.id,
+              avatar_url: pr.user.avatar_url,
+              html_url: pr.user.html_url,
+              contributions: 1,
+              role: 'CONTRIBUTOR', // 默认角色
+              repos: [repo],
+              is_maintainer: isMaintainer,
+              pull_requests: 0, // 初始化PR数量为0
+            });
+          }
         }
-      } else {
-        contributorsMap.set(login, {
-          login: login,
-          id: pr.user.id,
-          avatar_url: pr.user.avatar_url,
-          html_url: pr.user.html_url,
-          contributions: 1,
-          role: 'CONTRIBUTOR', // 默认角色
-          repos: [repo],
-          is_maintainer: isMaintainer,
-          pull_requests: 0, // 初始化PR数量为0
-        });
+
+        console.log(`仓库 ${repo} 处理完成`);
+      } catch (error) {
+        console.error(`处理仓库 ${repo} 时出错:`, error);
       }
-    }
+    });
+
+    // 等待当前批次的所有仓库处理完成
+    await Promise.all(batchPromises);
+    console.log(`第${i / batchSize + 1}批仓库处理完成`);
   }
 
   // 更新所有贡献者的PR数量
@@ -165,42 +200,56 @@ async function fetchAllContributors(repos: string[], startDate: string, endDate:
     }
   }
 
-  // 获取贡献者角色信息
-  for (const entry of Array.from(contributorsMap.entries())) {
-    const [login, contributor] = entry;
-    for (const repo of contributor.repos) {
-      const [owner, repoName] = repo.split('/');
-      try {
-        const { data: permissionData } = await fetchWithRetry(() =>
-          octokit.repos.getCollaboratorPermissionLevel({
-            owner,
-            repo: repoName,
-            username: login,
-          })
-        );
+  console.log('开始获取贡献者角色信息...');
+  // 获取贡献者角色信息 - 分批处理以避免API限制
+  const contributors = Array.from(contributorsMap.entries());
+  const batchContributorSize = 10;
 
-        if (permissionData.permission === 'admin') {
-          contributor.role = 'OWNER';
-          contributor.is_maintainer = true;
-          break;
-        } else if (
-          permissionData.permission === 'write' ||
-          permissionData.permission === 'maintain'
-        ) {
-          contributor.role = 'MEMBER';
-          contributor.is_maintainer = true;
-          break;
-        } else if (permissionData.permission === 'read' || permissionData.permission === 'triage') {
-          contributor.role = 'COLLABORATOR';
-          break;
+  for (let i = 0; i < contributors.length; i += batchContributorSize) {
+    const batchContributors = contributors.slice(i, i + batchContributorSize);
+    console.log(`处理第${i / batchContributorSize + 1}批贡献者角色: ${batchContributors.length}人`);
+
+    const rolePromises = batchContributors.map(async ([login, contributor]) => {
+      // 只检查第一个仓库的权限，避免过多API调用
+      if (contributor.repos.length > 0) {
+        const repo = contributor.repos[0];
+        const [owner, repoName] = repo.split('/');
+        try {
+          const { data: permissionData } = await fetchWithRetry(() =>
+            octokit.repos.getCollaboratorPermissionLevel({
+              owner,
+              repo: repoName,
+              username: login,
+            })
+          );
+
+          if (permissionData.permission === 'admin') {
+            contributor.role = 'OWNER';
+            contributor.is_maintainer = true;
+          } else if (
+            permissionData.permission === 'write' ||
+            permissionData.permission === 'maintain'
+          ) {
+            contributor.role = 'MEMBER';
+            contributor.is_maintainer = true;
+          } else if (
+            permissionData.permission === 'read' ||
+            permissionData.permission === 'triage'
+          ) {
+            contributor.role = 'COLLABORATOR';
+          }
+        } catch (error) {
+          // 无法获取权限信息，保持默认角色
+          console.log(`无法获取用户 ${login} 在仓库 ${repo} 的权限信息`);
         }
-      } catch (error) {
-        // 无法获取权限信息，保持默认角色
-        console.log(`无法获取用户 ${login} 在仓库 ${repo} 的权限信息`);
       }
-    }
+    });
+
+    // 等待当前批次的角色信息处理完成
+    await Promise.all(rolePromises);
   }
 
+  console.log(`贡献者数据获取完成，共 ${contributorsMap.size} 人`);
   return Array.from(contributorsMap.values());
 }
 
@@ -310,8 +359,8 @@ async function fetchPullRequests(owner: string, repo: string, startDate: string,
 // 重试函数，当请求失败时重试
 async function fetchWithRetry<T>(
   fetchFn: () => Promise<T>,
-  maxRetries = 3,
-  delay = 2000
+  maxRetries = 5, // 增加到5次重试
+  delay = 3000 // 增加基础延迟到3秒
 ): Promise<T> {
   let retries = 0;
 
@@ -323,6 +372,7 @@ async function fetchWithRetry<T>(
 
       // 如果是最后一次尝试失败，直接抛出错误
       if (retries === maxRetries) {
+        console.error(`所有重试失败，最终错误:`, error);
         throw error;
       }
 
@@ -332,13 +382,15 @@ async function fetchWithRetry<T>(
           ? parseInt(error.headers['x-ratelimit-reset']) * 1000
           : Date.now() + 60000;
 
-        const waitTime = Math.max(resetTime - Date.now(), 10000);
+        const waitTime = Math.max(resetTime - Date.now(), 15000); // 至少等待15秒
         console.log(`GitHub API 速率限制，等待 ${waitTime / 1000} 秒后重试...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       } else {
         // 常规错误，使用指数退避策略
         const waitTime = delay * Math.pow(2, retries - 1);
-        console.log(`请求失败，${waitTime / 1000} 秒后重试(${retries}/${maxRetries})...`);
+        console.log(
+          `请求失败(${error?.status || '未知错误'})，${waitTime / 1000} 秒后重试(${retries}/${maxRetries})...`
+        );
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
