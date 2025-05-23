@@ -35,14 +35,14 @@ export default function ContributorsList() {
         </a>
       ),
     },
-    {
-      title: '贡献次数',
-      dataIndex: 'contributions',
-      key: 'contributions',
-      width: 120,
-      sorter: (a: Contributor, b: Contributor) => a.contributions - b.contributions,
-      render: (contributions: number) => <span className="font-medium">{contributions}</span>,
-    },
+    // {
+    //   title: '贡献次数',
+    //   dataIndex: 'contributions',
+    //   key: 'contributions',
+    //   width: 120,
+    //   sorter: (a: Contributor, b: Contributor) => a.contributions - b.contributions,
+    //   render: (contributions: number) => <span className="font-medium">{contributions}</span>,
+    // },
     {
       title: 'PR数量',
       dataIndex: 'pull_requests',
