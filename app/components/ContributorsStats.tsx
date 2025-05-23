@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChartOutlined, TeamOutlined } from '@ant-design/icons';
+import { BarChartOutlined, PullRequestOutlined, TeamOutlined } from '@ant-design/icons';
 import { Col, Row, Spin } from 'antd';
 import { useSnapshot } from 'valtio';
 import { contributorsStore } from '../store/contributorsStore';
@@ -14,7 +14,7 @@ interface DataItem {
 }
 
 export default function ContributorsStats() {
-  const { contributors, loading, maintainerStats, repoStats, filters } =
+  const { contributors, loading, maintainerStats, prStats, repoStats, filters } =
     useSnapshot(contributorsStore);
 
   // 如果正在加载或没有数据，显示加载状态
@@ -50,6 +50,20 @@ export default function ContributorsStats() {
     },
   ];
 
+  // 准备PR统计数据
+  const prData: DataItem[] = [
+    {
+      type: '维护者PR',
+      value: prStats.maintainerPRs,
+      color: '#722ed1',
+    },
+    {
+      type: '贡献者PR',
+      value: prStats.contributorPRs,
+      color: '#eb2f96',
+    },
+  ];
+
   // 准备各栈分布饼图数据
   const stackData: DataItem[] = sortedRepoStats.map(([repo, count]) => ({
     type: repo,
@@ -60,7 +74,7 @@ export default function ContributorsStats() {
   return (
     <div>
       <Row gutter={16}>
-        <Col xs={24} md={8}>
+        <Col xs={24} md={6}>
           <div className="rounded-lg p-4">
             <div className="text-center text-gray-600 mb-2 flex items-center justify-center">
               <TeamOutlined className="mr-2" />
@@ -70,8 +84,18 @@ export default function ContributorsStats() {
           </div>
         </Col>
 
-        <Col xs={24} md={16}>
-          {showRepoStats && (
+        <Col xs={24} md={6}>
+          <div className="rounded-lg p-4">
+            <div className="text-center text-gray-600 mb-2 flex items-center justify-center">
+              <PullRequestOutlined className="mr-2" />
+              <span>PR数量：{prStats.total}个</span>
+            </div>
+            <SimpleChart data={prData} />
+          </div>
+        </Col>
+
+        {showRepoStats && (
+          <Col xs={24} md={12}>
             <div className="rounded-lg p-4">
               <div className="mb-3 text-center">
                 <span className="text-gray-600 flex items-center justify-center">
@@ -79,13 +103,10 @@ export default function ContributorsStats() {
                   各栈贡献者分布
                 </span>
               </div>
-
-              <div className="mt-4">
-                <SimpleChart data={stackData} />
-              </div>
+              <SimpleChart data={stackData} />
             </div>
-          )}
-        </Col>
+          </Col>
+        )}
       </Row>
     </div>
   );

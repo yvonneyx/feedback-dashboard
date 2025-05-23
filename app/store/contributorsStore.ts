@@ -22,6 +22,7 @@ export interface Contributor {
   role: ContributorRole;
   repos: string[]; // 参与的仓库列表
   is_maintainer: boolean;
+  pull_requests?: number; // 提交的PR数量
 }
 
 // 定义全局状态
@@ -37,6 +38,11 @@ interface ContributorsState {
   maintainerStats: {
     maintainers: number;
     contributors: number;
+  };
+  prStats: {
+    maintainerPRs: number;
+    contributorPRs: number;
+    total: number;
   };
   repoStats: {
     [key: string]: number;
@@ -56,6 +62,11 @@ export const contributorsStore = proxy<ContributorsState>({
   maintainerStats: {
     maintainers: 0,
     contributors: 0,
+  },
+  prStats: {
+    maintainerPRs: 0,
+    contributorPRs: 0,
+    total: 0,
   },
   repoStats: {},
 });
@@ -119,11 +130,24 @@ function calculateStats(contributors: Contributor[]) {
   const maintainers = contributors.filter(c => c.is_maintainer).length;
   const allContributors = contributors.length;
 
+  // PR统计
+  let maintainerPRs = 0;
+  let contributorPRs = 0;
+
   // 仓库统计
   const repoStats: { [key: string]: number } = {};
 
-  // 统计每个仓库的贡献者数量
+  // 统计每个仓库的贡献者数量和PR数量
   contributors.forEach(contributor => {
+    // 累计PR数量（如果有）
+    if (contributor.pull_requests) {
+      if (contributor.is_maintainer) {
+        maintainerPRs += contributor.pull_requests;
+      } else {
+        contributorPRs += contributor.pull_requests;
+      }
+    }
+
     contributor.repos.forEach(repo => {
       // 提取仓库名称（如 antvis/g2 -> g2）
       const repoName = repo.split('/').pop()?.toUpperCase() || repo;
@@ -139,6 +163,11 @@ function calculateStats(contributors: Contributor[]) {
   contributorsStore.maintainerStats = {
     maintainers: maintainers,
     contributors: allContributors - maintainers,
+  };
+  contributorsStore.prStats = {
+    maintainerPRs,
+    contributorPRs,
+    total: maintainerPRs + contributorPRs,
   };
   contributorsStore.repoStats = repoStats;
 }

@@ -35,22 +35,22 @@ export default function SimpleChart({ data, title }: SimpleChartProps) {
 
   // 饼图配置
   const config = {
-    appendPadding: 10,
+    appendPadding: 30,
     data,
     angleField: 'value',
     colorField: 'type',
-    radius: 0.75,
-    innerRadius: 0.6,
+    radius: 0.6,
+    innerRadius: 0.45,
     padAngle: 0.01,
     label: {
       position: 'outside',
-      text: (data: DataItem) => `${data.type}: ${data.value}`,
+      text: (data: DataItem) => `${data.value}`,
       style: {
         fontSize: 12,
         fontWeight: 500,
         textAlign: 'center',
         fill: '#666',
-        connectorDistance: 30,
+        connectorDistance: 10,
       },
     },
     state: {
@@ -60,10 +60,6 @@ export default function SimpleChart({ data, title }: SimpleChartProps) {
     interaction: {
       elementHighlight: true,
     },
-    // tooltip: ({ type, value }: { type: string; value: number }) => {
-    //   // Extra fields
-    //   return { type, value };
-    // },
     statistic: {
       title: {
         style: {

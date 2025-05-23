@@ -44,6 +44,14 @@ export default function ContributorsList() {
       render: (contributions: number) => <span className="font-medium">{contributions}</span>,
     },
     {
+      title: 'PR数量',
+      dataIndex: 'pull_requests',
+      key: 'pull_requests',
+      width: 120,
+      sorter: (a: Contributor, b: Contributor) => (a.pull_requests || 0) - (b.pull_requests || 0),
+      render: (pull_requests: number) => <span className="font-medium">{pull_requests || 0}</span>,
+    },
+    {
       title: '角色',
       dataIndex: 'role',
       key: 'role',

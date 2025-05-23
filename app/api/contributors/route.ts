@@ -38,6 +38,7 @@ interface Contributor {
   role: ContributorRole;
   repos: string[]; // 参与的仓库列表
   is_maintainer: boolean;
+  pull_requests: number; // 提交的PR数量
 }
 
 export async function POST(request: Request) {
@@ -62,6 +63,8 @@ export async function POST(request: Request) {
 // 获取多个仓库的所有贡献者
 async function fetchAllContributors(repos: string[], startDate: string, endDate: string) {
   const contributorsMap = new Map<string, Contributor>();
+  // PR计数映射表，用于统计每个用户提交的PR数量
+  const prCountMap = new Map<string, number>();
 
   // 获取维护者列表（仓库协作者）
   const maintainersMap = new Map<string, Set<string>>();
@@ -109,6 +112,7 @@ async function fetchAllContributors(repos: string[], startDate: string, endDate:
           role: 'CONTRIBUTOR', // 默认角色
           repos: [repo],
           is_maintainer: isMaintainer,
+          pull_requests: 0, // 初始化PR数量为0
         });
       }
     }
@@ -120,6 +124,9 @@ async function fetchAllContributors(repos: string[], startDate: string, endDate:
 
       const login = pr.user.login;
       const isMaintainer = maintainersMap.get(repo)?.has(login) || false;
+
+      // 更新PR计数
+      prCountMap.set(login, (prCountMap.get(login) || 0) + 1);
 
       // 更新或创建贡献者记录
       if (contributorsMap.has(login)) {
@@ -145,8 +152,16 @@ async function fetchAllContributors(repos: string[], startDate: string, endDate:
           role: 'CONTRIBUTOR', // 默认角色
           repos: [repo],
           is_maintainer: isMaintainer,
+          pull_requests: 0, // 初始化PR数量为0
         });
       }
+    }
+  }
+
+  // 更新所有贡献者的PR数量
+  for (const [login, prCount] of Array.from(prCountMap.entries())) {
+    if (contributorsMap.has(login)) {
+      contributorsMap.get(login)!.pull_requests = prCount;
     }
   }
 
