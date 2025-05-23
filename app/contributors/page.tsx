@@ -13,7 +13,7 @@ import { contributorsStore, fetchContributors } from '../store/contributorsStore
 const { Title, Text } = Typography;
 
 export default function ContributorsPage() {
-  const { loading, error, filters } = useSnapshot(contributorsStore);
+  const { error, filters } = useSnapshot(contributorsStore);
 
   // 首次加载时获取数据
   useEffect(() => {

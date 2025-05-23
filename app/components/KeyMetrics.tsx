@@ -9,8 +9,7 @@ import { useSnapshot } from 'valtio';
 const { Text } = Typography;
 
 export default function KeyMetrics() {
-  const { data, loading, issueResponseTimes, issueAnalyticsLoading, filters } =
-    useSnapshot(feedbackStore);
+  const { data, loading, issueResponseTimes, issueAnalyticsLoading } = useSnapshot(feedbackStore);
 
   // 计算实时统计数据
   const calculateLiveStats = () => {

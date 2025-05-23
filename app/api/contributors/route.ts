@@ -293,7 +293,11 @@ async function fetchPullRequests(owner: string, repo: string, startDate: string,
 }
 
 // 重试函数，当请求失败时重试
-async function fetchWithRetry(fetchFn: Function, maxRetries = 3, delay = 2000) {
+async function fetchWithRetry<T>(
+  fetchFn: () => Promise<T>,
+  maxRetries = 3,
+  delay = 2000
+): Promise<T> {
   let retries = 0;
 
   while (retries < maxRetries) {
@@ -324,4 +328,8 @@ async function fetchWithRetry(fetchFn: Function, maxRetries = 3, delay = 2000) {
       }
     }
   }
+
+  // 这一行代码实际上不会被执行到，因为要么成功返回，要么抛出异常
+  // 但需要添加以满足TypeScript类型检查
+  throw new Error('所有重试失败');
 }

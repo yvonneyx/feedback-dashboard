@@ -1,7 +1,6 @@
 'use client';
 
 import { Avatar, Table, Tag, Tooltip } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { useSnapshot } from 'valtio';
 import { Contributor, contributorsStore } from '../store/contributorsStore';
 
@@ -13,7 +12,7 @@ export default function ContributorsList() {
   }
 
   // 表格列定义
-  const columns: ColumnsType<Contributor> = [
+  const columns: any = [
     {
       title: '贡献者',
       dataIndex: 'login',
@@ -41,7 +40,7 @@ export default function ContributorsList() {
       dataIndex: 'contributions',
       key: 'contributions',
       width: 120,
-      sorter: (a, b) => a.contributions - b.contributions,
+      sorter: (a: Contributor, b: Contributor) => a.contributions - b.contributions,
       render: (contributions: number) => <span className="font-medium">{contributions}</span>,
     },
     {
@@ -55,7 +54,7 @@ export default function ContributorsList() {
         { text: '协作者', value: 'COLLABORATOR' },
         { text: '贡献者', value: 'CONTRIBUTOR' },
       ],
-      onFilter: (value, record) => record.role === value,
+      onFilter: (value: string, record: Contributor) => record.role === value,
       render: (role: string) => {
         let color = '';
         let displayRole = '';
@@ -112,7 +111,7 @@ export default function ContributorsList() {
         { text: 'AVA', value: 'antvis/AVA' },
         { text: 'Charts', value: 'ant-design/ant-design-charts' },
       ],
-      onFilter: (value, record) => record.repos.includes(value.toString()),
+      onFilter: (value: string, record: Contributor) => record.repos.includes(value),
     },
   ];
 

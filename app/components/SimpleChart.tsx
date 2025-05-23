@@ -44,7 +44,7 @@ export default function SimpleChart({ data, title }: SimpleChartProps) {
     padAngle: 0.01,
     label: {
       position: 'outside',
-      text: data => `${data.type}: ${data.value}`,
+      text: (data: DataItem) => `${data.type}: ${data.value}`,
       style: {
         fontSize: 12,
         fontWeight: 500,
@@ -92,7 +92,7 @@ export default function SimpleChart({ data, title }: SimpleChartProps) {
         style: {
           fontSize: 12,
         },
-        formatter: (text: string, item: any) => {
+        formatter: (text: string) => {
           // 找到对应的数据项
           const dataItem = data.find(d => d.type === text);
           if (dataItem) {
