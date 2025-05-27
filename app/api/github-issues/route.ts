@@ -2,7 +2,7 @@ import { Octokit } from '@octokit/rest';
 import { NextResponse } from 'next/server';
 
 // 直接设置API超时常量，避免使用getConfig
-const API_TIMEOUT = 120000; // 默认120秒
+const API_TIMEOUT = 60000; // 将默认超时时间减少到60秒
 
 // 配置GitHub API客户端，增加重试和超时配置
 const octokit = new Octokit({
@@ -22,7 +22,7 @@ export const config = {
     externalResolver: true,
   },
   runtime: 'nodejs',
-  maxDuration: 300, // 设置最大执行时间为300秒(5分钟)
+  maxDuration: 180, // 将最大执行时间减少到180秒(3分钟)
 };
 
 export async function POST(request: Request) {
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     console.log(`获取 ${repo} 的issues数据`);
 
     // 查询仓库中的issues
-    const issues = await fetchAllIssues(owner, repoName, startDate, endDate);
+    const issues = await fetchAllIssues(owner, repoName, startDate, endDate, 50);
 
     // 分析每个issue的响应时间
     const analyzedIssues = await analyzeIssueResponseTimes(issues, owner, repoName);
@@ -59,7 +59,13 @@ export async function POST(request: Request) {
 }
 
 // 获取符合条件的所有issues - 使用search API获取精确日期范围内的issues
-async function fetchAllIssues(owner: string, repo: string, startDate: string, endDate: string) {
+async function fetchAllIssues(
+  owner: string,
+  repo: string,
+  startDate: string,
+  endDate: string,
+  perPage: number = 100
+) {
   const issues = [];
   let page = 1;
   let hasMorePages = true;
@@ -87,7 +93,7 @@ async function fetchAllIssues(owner: string, repo: string, startDate: string, en
       const searchResponse = await fetchWithRetry(() =>
         octokit.search.issuesAndPullRequests({
           q: query,
-          per_page: 100,
+          per_page: perPage, // 使用传入的perPage参数
           page,
           sort: 'created',
           order: 'desc',
@@ -100,7 +106,8 @@ async function fetchAllIssues(owner: string, repo: string, startDate: string, en
 
       // 检查是否还有更多页面
       hasMorePages =
-        searchResponse.data.items.length === 100 && page * 100 < searchResponse.data.total_count;
+        searchResponse.data.items.length === perPage &&
+        page * perPage < searchResponse.data.total_count;
 
       console.log(
         `第${page}页获取到${searchResponse.data.items.length}个issues，总计: ${searchResponse.data.total_count}`
