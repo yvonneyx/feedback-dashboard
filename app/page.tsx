@@ -26,13 +26,6 @@ export default function Home() {
   ]);
   const [selectedRepo, setSelectedRepo] = useState<string>(filters.repo);
 
-  // 处理日期范围变化
-  const handleDateChange = (dates: [Dayjs, Dayjs]) => {
-    if (dates && dates[0] && dates[1]) {
-      setDateRange(dates);
-    }
-  };
-
   // 处理仓库选择变化
   const handleRepoChange = (value: string) => {
     setSelectedRepo(value);
@@ -152,101 +145,6 @@ export default function Home() {
 
   return (
     <>
-      {/* 自定义样式 */}
-      <style jsx global>{`
-        .custom-table .ant-table-thead > tr > th {
-          background: #f8fafc !important;
-          border-bottom: 2px solid #e2e8f0 !important;
-          color: #374151 !important;
-          font-weight: 600 !important;
-          padding: 16px 12px !important;
-        }
-
-        .custom-table .ant-table-tbody > tr > td {
-          padding: 16px 12px !important;
-          border-bottom: 1px solid #f1f5f9 !important;
-        }
-
-        .custom-table .ant-table-tbody > tr:hover > td {
-          background: #f8fafc !important;
-        }
-
-        .custom-table .ant-pagination {
-          margin: 0 !important;
-        }
-
-        .fade-in {
-          animation: fadeIn 0.6s ease-in;
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .pulse-animation {
-          animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-          0%,
-          100% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.05);
-          }
-        }
-
-        /* 优化进度条样式 */
-        .ant-progress-line {
-          border-radius: 8px;
-        }
-
-        .ant-progress-inner {
-          border-radius: 8px;
-          background: #f0f0f0;
-        }
-
-        .ant-progress-bg {
-          border-radius: 8px;
-          height: 8px !important;
-        }
-
-        /* 优化卡片阴影 */
-        .ant-card {
-          border-radius: 12px;
-          transition: all 0.3s ease;
-        }
-
-        .ant-card:hover {
-          transform: translateY(-2px);
-        }
-
-        /* 优化标签页样式 */
-        .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
-          border-radius: 8px 8px 0 0;
-          border: 1px solid #e2e8f0;
-          background: #f8fafc;
-          transition: all 0.3s ease;
-        }
-
-        .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
-          background: white;
-          border-bottom-color: white;
-        }
-
-        .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab:hover {
-          background: #f1f5f9;
-        }
-      `}</style>
-
       <div
         className="min-h-screen text-slate-700 font-['Inter',system-ui,sans-serif]"
         style={{

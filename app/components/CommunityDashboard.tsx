@@ -17,7 +17,7 @@ import DocDetails from './DocDetails';
 import IssueDetails from './IssueDetails';
 import PRStats from './PRStats';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Panel } = Collapse;
 
 interface DashboardMetrics {
@@ -578,7 +578,7 @@ export default function CommunityDashboard() {
         <Card className="text-center py-8 border-slate-200">
           <BarChartOutlined className="text-3xl text-slate-400 mb-2" />
           <div className="text-slate-500 mb-1">暂无数据</div>
-          <div className="text-slate-400 text-sm">请点击"查询数据"按钮获取数据</div>
+          <div className="text-slate-400 text-sm">请点击「查询数据」按钮获取数据</div>
         </Card>
       )}
     </div>

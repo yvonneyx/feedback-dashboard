@@ -2,6 +2,7 @@
   "name": "antv-community-support-dashboard",
   "version": "0.1.0",
   "private": true,
+  "repository": "git@github.com:yvonneyx/feedback-dashboard.git",
   "scripts": {
     "build": "next build",
     "dev": "next dev",
@@ -40,6 +41,5 @@
     "tailwindcss": "^4",
     "ts-prune": "^0.10.3",
     "typescript": "^5"
-  },
-  "repository": "git@github.com:yvonneyx/feedback-dashboard.git"
+  }
 }

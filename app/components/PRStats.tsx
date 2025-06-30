@@ -17,7 +17,7 @@ interface ChartDataItem {
   color: string;
 }
 
-function SimpleChart({ data, title }: { data: ChartDataItem[]; title?: string }) {
+function SimpleChart({ data }: { data: ChartDataItem[] }) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
   if (total === 0) {
@@ -141,7 +141,7 @@ export default function PRStats() {
       <Card className="text-center py-8 bg-slate-50 border-slate-200">
         <PullRequestOutlined className="text-3xl text-slate-400 mb-2" />
         <div className="text-slate-500 mb-1">暂无 PR 数据</div>
-        <div className="text-slate-400 text-sm">请点击上方"查询数据"按钮获取数据</div>
+        <div className="text-slate-400 text-sm">请点击上方「查询数据」按钮获取数据</div>
       </Card>
     );
   }
