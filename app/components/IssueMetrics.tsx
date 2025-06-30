@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, Card, Empty, Progress, Spin, Table, Typography } from 'antd';
+import { Card, Empty, Progress, Spin, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useSnapshot } from 'valtio';
 import { feedbackStore } from '../store/feedbackStore';
@@ -186,108 +186,6 @@ export default function IssueMetrics() {
     </div>
   ) : (
     <div className="space-y-5">
-      {/* 顶部卡片统计 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card
-          className="rounded-lg border border-gray-100 bg-white"
-          bodyStyle={{ padding: '14px' }}
-        >
-          <div className="flex justify-between items-center mb-1">
-            <div className="flex items-center">
-              <Badge color="#4f46e5" />
-              <Text className="text-gray-600 text-xs font-medium ml-1.5">已解决 Issue</Text>
-            </div>
-            <Badge
-              className="bg-indigo-100 text-indigo-600 rounded-full px-1.5 py-0.5"
-              count={`${metrics.closureRate}%`}
-              style={{ backgroundColor: '#eef2ff', color: '#4f46e5' }}
-            />
-          </div>
-
-          <div className="flex items-baseline mt-1">
-            <span className="text-indigo-700 font-semibold text-xl">{metrics.closedIssues}</span>
-            <span className="text-gray-400 text-xs ml-1.5">/ {metrics.totalIssues}</span>
-          </div>
-
-          <Progress
-            percent={metrics.closureRate}
-            size="small"
-            strokeColor="#4f46e5"
-            className="mt-2 mb-0"
-            showInfo={false}
-          />
-        </Card>
-
-        <Card
-          className="rounded-lg border border-gray-100 bg-white"
-          bodyStyle={{ padding: '14px' }}
-        >
-          <div className="flex justify-between items-center mb-1">
-            <div className="flex items-center">
-              <Badge color="#3b82f6" />
-              <Text className="text-gray-600 text-xs font-medium ml-1.5">已响应 Issue</Text>
-            </div>
-            <Badge
-              className="bg-blue-100 text-blue-600 rounded-full px-1.5 py-0.5"
-              count={`${metrics.responseRate}%`}
-              style={{ backgroundColor: '#dbeafe', color: '#3b82f6' }}
-            />
-          </div>
-
-          <div className="flex items-baseline mt-1">
-            <span className="text-blue-600 font-semibold text-xl">{metrics.respondedIssues}</span>
-            <span className="text-gray-400 text-xs ml-1.5">/ {metrics.totalIssues}</span>
-          </div>
-
-          <Progress
-            percent={metrics.responseRate}
-            size="small"
-            strokeColor="#3b82f6"
-            className="mt-2 mb-0"
-            showInfo={false}
-          />
-        </Card>
-
-        <Card
-          className="rounded-lg border border-gray-100 bg-white"
-          bodyStyle={{ padding: '14px' }}
-        >
-          <div className="flex justify-between items-center mb-1">
-            <div className="flex items-center">
-              <Badge color="#10b981" />
-              <Text className="text-gray-600 text-xs font-medium ml-1.5">48小时响应率</Text>
-            </div>
-            <Badge
-              className="bg-emerald-100 text-emerald-600 rounded-full px-1.5 py-0.5"
-              count={`${metrics.responseRateUnder48h}%`}
-              style={{ backgroundColor: '#d1fae5', color: '#10b981' }}
-            />
-          </div>
-
-          <div className="flex items-baseline mt-1">
-            <span className="text-emerald-600 font-semibold text-xl">
-              {
-                issueResponseTimes?.filter(
-                  issue =>
-                    issue.hasResponse &&
-                    issue.responseTimeInHours !== null &&
-                    issue.responseTimeInHours <= 48
-                ).length
-              }
-            </span>
-            <span className="text-gray-400 text-xs ml-1.5">/ {metrics.totalIssues}</span>
-          </div>
-
-          <Progress
-            percent={metrics.responseRateUnder48h}
-            size="small"
-            strokeColor="#10b981"
-            className="mt-2 mb-0"
-            showInfo={false}
-          />
-        </Card>
-      </div>
-
       {/* 仓库对比分析 */}
       <Card
         className="rounded-lg border border-gray-100"

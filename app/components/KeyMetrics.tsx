@@ -53,7 +53,8 @@ export default function KeyMetrics() {
 
     // 48小时响应率
     const respondedUnder48h = issueResponseTimes.filter(
-      issue => issue.responseTimeInHours !== null && issue.responseTimeInHours <= 48
+      issue =>
+        issue.hasResponse && issue.responseTimeInHours !== null && issue.responseTimeInHours <= 48
     ).length;
     const responseRateUnder48h = Math.round((respondedUnder48h / total) * 100);
 

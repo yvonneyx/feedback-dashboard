@@ -152,6 +152,16 @@ async function fetchProductData(repo: string) {
 
     const data = await response.json();
 
+    console.log(
+      `📥 ${repo} API返回数据样例:`,
+      data.slice(0, 2).map((item: any) => ({
+        number: item.number,
+        hasResponse: item.hasResponse,
+        responseTimeInHours: item.responseTimeInHours,
+        meetsSLA: item.meetsSLA,
+      }))
+    );
+
     // 存储到对应仓库的数据集
     feedbackStore.productResponseTimes[repo] = data;
 

@@ -209,14 +209,21 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
           (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         )[0];
 
-      // 检查timeline中的首次标签添加事件
+      // 检查timeline中的首次标签添加事件 - 优化逻辑，让任何维护者添加的标签都算作响应
       const firstLabelEvent = timelineResponse.data
-        .filter(
-          (event: any) =>
-            event.event === 'labeled' &&
-            ((event.actor && event.actor?.login !== issueCreator && event.actor?.type !== 'Bot') ||
-              event.label?.name === 'OSCP')
-        )
+        .filter((event: any) => {
+          // 过滤标签添加事件
+          if (event.event !== 'labeled') return false;
+
+          // 排除issue创建者自己添加的标签
+          if (event.actor && event.actor.login === issueCreator) return false;
+
+          // 排除机器人添加的标签
+          if (event.actor && event.actor.type === 'Bot') return false;
+
+          // 包含所有其他人（维护者）添加的标签
+          return true;
+        })
         .sort(
           (a: any, b: any) => new Date(a?.created_at).getTime() - new Date(b?.created_at).getTime()
         )[0];
@@ -233,19 +240,44 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
         // 比较哪个响应先发生
         if (commentTime && labelTime) {
           firstResponseTime = commentTime < labelTime ? commentTime : labelTime;
-        } else {
-          firstResponseTime = commentTime || labelTime;
+          const responseType = commentTime < labelTime ? '评论' : '标签';
+          console.log(
+            `✅ Issue #${issueNumber}: 首次响应为${responseType}，响应时间=${Math.round(((firstResponseTime.getTime() - issueCreatedAt.getTime()) / (1000 * 60 * 60)) * 10) / 10}小时`
+          );
+        } else if (commentTime) {
+          firstResponseTime = commentTime;
+          console.log(
+            `✅ Issue #${issueNumber}: 首次响应为评论，响应时间=${Math.round(((firstResponseTime.getTime() - issueCreatedAt.getTime()) / (1000 * 60 * 60)) * 10) / 10}小时`
+          );
+        } else if (labelTime) {
+          firstResponseTime = labelTime;
+          const labelName = (firstLabelEvent as any)?.label?.name || '未知标签';
+          console.log(
+            `✅ Issue #${issueNumber}: 首次响应为标签"${labelName}"，响应时间=${Math.round(((firstResponseTime.getTime() - issueCreatedAt.getTime()) / (1000 * 60 * 60)) * 10) / 10}小时`
+          );
         }
 
         // 计算响应时间（小时）
         if (firstResponseTime) {
           const timeDiff = firstResponseTime.getTime() - issueCreatedAt.getTime();
           responseTimeInHours = Math.round((timeDiff / (1000 * 60 * 60)) * 10) / 10; // 保留一位小数
+
+          // 确保响应时间不为负数
+          if (responseTimeInHours < 0) {
+            console.warn(
+              `⚠️ Issue #${issueNumber} 响应时间为负数: ${responseTimeInHours}小时，设置为0`
+            );
+            responseTimeInHours = 0;
+          }
         }
       }
 
       // 修正meetsSLA判断，确保正确计算48小时响应率
       const meetsSLA = hasResponse && responseTimeInHours !== null && responseTimeInHours <= 48;
+
+      if (meetsSLA) {
+        console.log(`✅ Issue #${issueNumber}: 符合48h SLA, 响应时间=${responseTimeInHours}小时`);
+      }
 
       analyzedIssues.push({
         number: issueNumber,

@@ -1,38 +1,125 @@
 'use client';
 
-import { Badge, Tabs } from 'antd';
+import { CommentOutlined, FileTextOutlined, StarOutlined } from '@ant-design/icons';
+import { Badge, Card, Col, Progress, Row, Tabs, Typography } from 'antd';
+import dayjs from 'dayjs';
 import { useSnapshot } from 'valtio';
 import { feedbackStore } from '../store/feedbackStore';
 import DocDataDisplay from './DocDataDisplay';
 
+const { Title, Text } = Typography;
+
 export default function DocDetails() {
-  const { data } = useSnapshot(feedbackStore);
+  const { data, filters } = useSnapshot(feedbackStore);
+
+  // 计算关键指标
+  const metrics = {
+    total: data?.length || 0,
+    suggestions: data?.filter(item => !item.rating && item.isResolved === '0').length || 0,
+    ratings: data?.filter(item => item.rating).length || 0,
+    resolved: data?.filter(item => item.resolved || item.isResolved === '1').length || 0,
+  };
+
+  const resolveRate = metrics.total > 0 ? Math.round((metrics.resolved / metrics.total) * 100) : 0;
+  const suggestionRate =
+    metrics.total > 0 ? Math.round((metrics.suggestions / metrics.total) * 100) : 0;
 
   return (
-    <div className="overflow-hidden">
-      <Tabs
-        defaultActiveKey="doc-suggestions"
-        type="card"
-        items={[
-          {
-            key: 'doc-suggestions',
-            label: (
-              <Badge
-                count={data?.filter(i => !i.rating && i.isResolved === '0').length || 0}
-                color="#f50"
-              >
-                <span className="px-2">文档建议</span>
-              </Badge>
-            ),
-            children: <DocDataDisplay dataType="doc-suggestions" />,
-          },
-          {
-            key: 'page-ratings',
-            label: <span className="px-2">页面评价</span>,
-            children: <DocDataDisplay dataType="page-ratings" />,
-          },
-        ]}
-      />
+    <div className="space-y-4">
+      {/* 紧凑指标展示 */}
+      <div className="border border-slate-200 rounded-lg p-3 bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center mb-3">
+          <Title level={5} className="mb-1 text-slate-800">
+            <CommentOutlined className="mr-1 text-slate-600" />
+            文档反馈详情
+          </Title>
+          <Text type="secondary" className="text-xs">
+            {dayjs(filters.startDate).format('MM/DD')} - {dayjs(filters.endDate).format('MM/DD')}
+          </Text>
+        </div>
+
+        <Row gutter={8} className="mb-3">
+          <Col span={6}>
+            <div className="text-center bg-white/80 rounded p-2 border border-slate-100">
+              <div className="text-lg font-bold text-slate-800">{metrics.total}</div>
+              <div className="text-xs text-slate-500">总数</div>
+            </div>
+          </Col>
+          <Col span={6}>
+            <div className="text-center bg-white/80 rounded p-2 border border-slate-100">
+              <div className="text-lg font-bold text-blue-600">{metrics.suggestions}</div>
+              <div className="text-xs text-slate-500">文档建议</div>
+            </div>
+          </Col>
+          <Col span={6}>
+            <div className="text-center bg-white/80 rounded p-2 border border-slate-100">
+              <div className="text-lg font-bold text-emerald-600">{metrics.ratings}</div>
+              <div className="text-xs text-slate-500">页面评价</div>
+            </div>
+          </Col>
+          <Col span={6}>
+            <div className="text-center bg-white/80 rounded p-2 border border-slate-100">
+              <div className="text-lg font-bold text-slate-700">{resolveRate}%</div>
+              <div className="text-xs text-slate-500">处理率</div>
+            </div>
+          </Col>
+        </Row>
+
+        {/* 进度条 */}
+        <Row gutter={8}>
+          <Col span={12}>
+            <div className="flex items-center justify-between mb-1">
+              <Text className="text-xs text-slate-600">处理率</Text>
+              <Text className="text-xs font-medium text-slate-700">{resolveRate}%</Text>
+            </div>
+            <Progress percent={resolveRate} strokeColor="#64748b" size="small" showInfo={false} />
+          </Col>
+          <Col span={12}>
+            <div className="flex items-center justify-between mb-1">
+              <Text className="text-xs text-slate-600">文档建议占比</Text>
+              <Text className="text-xs font-medium text-slate-700">{suggestionRate}%</Text>
+            </div>
+            <Progress
+              percent={suggestionRate}
+              strokeColor="#3b82f6"
+              size="small"
+              showInfo={false}
+            />
+          </Col>
+        </Row>
+      </div>
+
+      {/* 紧凑标签页 */}
+      <Card className="p-2 border-slate-200">
+        <Tabs
+          defaultActiveKey="doc-suggestions"
+          size="small"
+          items={[
+            {
+              key: 'doc-suggestions',
+              label: (
+                <div className="flex items-center">
+                  <FileTextOutlined className="mr-1 text-slate-600" />
+                  <Badge count={metrics.suggestions} size="small" className="mr-1">
+                    <span className="text-xs text-slate-600">文档建议</span>
+                  </Badge>
+                </div>
+              ),
+              children: <DocDataDisplay dataType="doc-suggestions" />,
+            },
+            {
+              key: 'page-ratings',
+              label: (
+                <span className="text-xs text-slate-600">
+                  <StarOutlined className="mr-1" />
+                  页面评价
+                </span>
+              ),
+              children: <DocDataDisplay dataType="page-ratings" />,
+            },
+          ]}
+        />
+      </Card>
     </div>
   );
 }
