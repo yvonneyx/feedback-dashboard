@@ -155,12 +155,8 @@ export default function PRStats() {
         <div className="text-center mb-3">
           <Title level={5} className="mb-1 text-slate-800">
             <PullRequestOutlined className="mr-1 text-slate-600" />
-            PR 统计详情
+            PR 统计
           </Title>
-          <Text type="secondary" className="text-xs">
-            {dayjs(prStore.filters.startDate).format('MM/DD')} -{' '}
-            {dayjs(prStore.filters.endDate).format('MM/DD')}
-          </Text>
         </div>
 
         <Row gutter={8} className="text-center">
@@ -306,23 +302,6 @@ function PRDetails() {
           {record.merged_at && (
             <div className="text-green-600">合并 {dayjs(record.merged_at).format('MM-DD')}</div>
           )}
-        </div>
-      ),
-    },
-    {
-      title: '代码变更',
-      key: 'changes',
-      width: 100,
-      render: (record: any) => (
-        <div className="text-center">
-          <div className="bg-gray-50 rounded p-1">
-            <div className="text-xs mb-1">
-              <span className="text-green-600 font-medium">+{record.additions}</span>
-              <span className="text-gray-400 mx-1">/</span>
-              <span className="text-red-600 font-medium">-{record.deletions}</span>
-            </div>
-            <div className="text-xs text-gray-500">{record.changed_files} 文件</div>
-          </div>
         </div>
       ),
     },

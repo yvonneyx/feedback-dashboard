@@ -5,17 +5,55 @@ import {
   ClockCircleOutlined,
   IssuesCloseOutlined,
   LineChartOutlined,
+  LoadingOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { Badge, Button, Card, Col, Progress, Row, Tabs, Typography } from 'antd';
-import dayjs from 'dayjs';
+import { Alert, Badge, Button, Card, Col, Progress, Row, Spin, Tabs, Typography } from 'antd';
 import { useSnapshot } from 'valtio';
 import IssueDataDisplay from './IssueDataDisplay';
 
 const { Title, Text } = Typography;
 
 export default function IssueDetails() {
-  const { issueResponseTimes, filters } = useSnapshot(feedbackStore);
+  const { issueResponseTimes, filters, issueAnalyticsLoading, error } = useSnapshot(feedbackStore);
+
+  // 如果正在加载，显示loading状态
+  if (issueAnalyticsLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="text-center">
+          <Spin size="large" indicator={<LoadingOutlined spin />} />
+          <div className="mt-2 text-gray-600 text-sm">正在获取Issue数据...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果有错误，显示错误状态
+  if (error) {
+    return (
+      <Card className="border-slate-200 bg-slate-50 p-3">
+        <Alert
+          message="获取Issue数据失败"
+          description={error}
+          type="error"
+          showIcon
+          className="border-0 bg-transparent"
+        />
+      </Card>
+    );
+  }
+
+  // 如果没有数据，显示空状态占位
+  if (!issueResponseTimes || issueResponseTimes.length === 0) {
+    return (
+      <Card className="text-center py-8 bg-slate-50 border-slate-200">
+        <IssuesCloseOutlined className="text-3xl text-slate-400 mb-2" />
+        <div className="text-slate-500 mb-1">暂无 Issue 数据</div>
+        <div className="text-slate-400 text-sm">请点击上方「查询数据」按钮获取数据</div>
+      </Card>
+    );
+  }
 
   // 计算关键指标
   const metrics = {
@@ -47,11 +85,8 @@ export default function IssueDetails() {
         <div className="text-center mb-3">
           <Title level={5} className="mb-1 text-slate-800">
             <IssuesCloseOutlined className="mr-1 text-slate-600" />
-            Issue 处理详情
+            Issue 处理
           </Title>
-          <Text type="secondary" className="text-xs">
-            {dayjs(filters.startDate).format('MM/DD')} - {dayjs(filters.endDate).format('MM/DD')}
-          </Text>
         </div>
 
         <Row gutter={8} className="mb-3">
@@ -106,47 +141,45 @@ export default function IssueDetails() {
       </div>
 
       {/* 紧凑标签页 */}
-      <Card className="p-2 border-slate-200">
-        <Tabs
-          defaultActiveKey="issue-metrics"
-          size="small"
-          items={[
-            {
-              key: 'unresponded-issues',
-              label: (
-                <div className="flex items-center">
-                  <ClockCircleOutlined className="mr-1 text-slate-600" />
-                  <Badge count={metrics.unresponded} size="small" className="mr-1">
-                    <span className="text-xs text-slate-600">{getTabTitle()}</span>
-                  </Badge>
-                </div>
-              ),
-              children: <IssueDataDisplay dataType="unresponded-issues" />,
-            },
-            {
-              key: 'issue-response-times',
-              label: (
-                <span className="text-xs text-slate-600">
-                  <ThunderboltOutlined className="mr-1" />
-                  响应时间
-                </span>
-              ),
-              children: <IssueDataDisplay dataType="issue-response-times" />,
-            },
-          ]}
-          tabBarExtraContent={
-            <Button
-              type="link"
-              icon={<LineChartOutlined />}
-              href="https://ossinsight.io/"
-              target="_blank"
-              className="text-xs text-slate-600 hover:text-slate-800"
-            >
-              OSS Insight
-            </Button>
-          }
-        />
-      </Card>
+      <Tabs
+        defaultActiveKey="issue-metrics"
+        size="small"
+        items={[
+          {
+            key: 'unresponded-issues',
+            label: (
+              <div className="flex items-center">
+                <ClockCircleOutlined className="mr-1 text-slate-600" />
+                <Badge count={metrics.unresponded} size="small" className="mr-1">
+                  <span className="text-xs text-slate-600">{getTabTitle()}</span>
+                </Badge>
+              </div>
+            ),
+            children: <IssueDataDisplay dataType="unresponded-issues" />,
+          },
+          {
+            key: 'issue-response-times',
+            label: (
+              <span className="text-xs text-slate-600">
+                <ThunderboltOutlined className="mr-1" />
+                响应时间
+              </span>
+            ),
+            children: <IssueDataDisplay dataType="issue-response-times" />,
+          },
+        ]}
+        tabBarExtraContent={
+          <Button
+            type="link"
+            icon={<LineChartOutlined />}
+            href="https://ossinsight.io/"
+            target="_blank"
+            className="text-xs text-slate-600 hover:text-slate-800"
+          >
+            OSS Insight
+          </Button>
+        }
+      />
     </div>
   );
 }

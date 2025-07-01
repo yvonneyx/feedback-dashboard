@@ -284,14 +284,14 @@ export function getPRTypeLabel(type: string): string {
 // 获取PR类型的颜色
 export function getPRTypeColor(type: string): string {
   const typeColors: Record<string, string> = {
-    feat: '#52c41a',
-    fix: '#f5222d',
-    docs: '#1890ff',
-    style: '#722ed1',
-    refactor: '#faad14',
-    test: '#13c2c2',
-    chore: '#8c8c8c',
-    other: '#d9d9d9',
+    feat: '#52c41a', // 绿色 - 新功能
+    fix: '#ff4d4f', // 红色 - 修复
+    docs: '#1890ff', // 蓝色 - 文档
+    style: '#722ed1', // 紫色 - 样式
+    refactor: '#faad14', // 橙色 - 重构
+    test: '#13c2c2', // 青色 - 测试
+    chore: '#8c8c8c', // 灰色 - 构建
+    other: '#d9d9d9', // 浅灰 - 其他
   };
 
   return typeColors[type] || '#d9d9d9';

@@ -8,27 +8,100 @@ import {
   fetchFeedbackData,
   fetchIssueResponseTimes,
 } from '@/app/store/feedbackStore';
-import { fetchPRData } from '@/app/store/prStore';
+import { fetchPRData, prStore } from '@/app/store/prStore';
 import { LineChartOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
 import { Alert, Button, Card, DatePicker, Divider, Space, Typography } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import { useSnapshot } from 'valtio';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
-export default function Home() {
+function HomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { filters, error, loading } = useSnapshot(feedbackStore);
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
-    dayjs(filters.startDate),
-    dayjs(filters.endDate),
-  ]);
-  const [selectedRepo, setSelectedRepo] = useState<string>(filters.repo);
+
+  // 从URL参数初始化状态
+  const initDateRange = (): [Dayjs, Dayjs] => {
+    const startParam = searchParams.get('startDate');
+    const endParam = searchParams.get('endDate');
+
+    if (startParam && endParam) {
+      return [dayjs(startParam), dayjs(endParam)];
+    }
+    return [dayjs(filters.startDate), dayjs(filters.endDate)];
+  };
+
+  const initRepo = (): string => {
+    const repoParam = searchParams.get('repo');
+    return repoParam || filters.repo;
+  };
+
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(initDateRange);
+  const [selectedRepo, setSelectedRepo] = useState<string>(initRepo);
+
+  // 页面加载时同步URL参数到store，并检查是否需要自动查询
+  useEffect(() => {
+    const startParam = searchParams.get('startDate');
+    const endParam = searchParams.get('endDate');
+    const repoParam = searchParams.get('repo');
+
+    if (startParam && endParam) {
+      feedbackStore.filters.startDate = dayjs(startParam).toISOString();
+      feedbackStore.filters.endDate = dayjs(endParam).toISOString();
+      setDateRange([dayjs(startParam), dayjs(endParam)]);
+    }
+
+    if (repoParam) {
+      feedbackStore.filters.repo = repoParam;
+      setSelectedRepo(repoParam);
+    }
+
+    // 检查是否需要自动查询数据
+    // 如果没有数据且不在加载状态，则自动触发查询
+    const hasData = feedbackStore.data || feedbackStore.issueResponseTimes || prStore.data;
+    const isLoading =
+      feedbackStore.loading || feedbackStore.issueAnalyticsLoading || prStore.loading;
+
+    if (!hasData && !isLoading) {
+      console.log('🚀 初次加载，自动查询数据...');
+      setTimeout(() => {
+        handleApplyFilter();
+      }, 500); // 延迟500ms执行，确保页面渲染完成
+    }
+  }, [searchParams]);
+
+  // 更新URL参数
+  const updateUrlParams = (newStartDate: Dayjs, newEndDate: Dayjs, newRepo: string) => {
+    const params = new URLSearchParams();
+    params.set('startDate', newStartDate.format('YYYY-MM-DD'));
+    params.set('endDate', newEndDate.format('YYYY-MM-DD'));
+    if (newRepo && newRepo !== '' && newRepo !== 'all') {
+      params.set('repo', newRepo);
+    }
+
+    // 使用replace避免创建新的历史记录条目
+    router.replace(`/?${params.toString()}`);
+  };
 
   // 处理仓库选择变化
   const handleRepoChange = (value: string) => {
     setSelectedRepo(value);
+    updateUrlParams(dateRange[0], dateRange[1], value);
+  };
+
+  // 处理日期范围变化
+  const handleDateRangeChange = (dates: [Dayjs | null, Dayjs | null] | null) => {
+    if (dates && dates[0] && dates[1]) {
+      const newDateRange: [Dayjs, Dayjs] = [dates[0], dates[1]];
+      setDateRange(newDateRange);
+      feedbackStore.filters.startDate = dates[0].toISOString();
+      feedbackStore.filters.endDate = dates[1].toISOString();
+      updateUrlParams(dates[0], dates[1], selectedRepo);
+    }
   };
 
   // 应用筛选条件
@@ -43,6 +116,9 @@ export default function Home() {
       feedbackStore.filters.startDate = dateRange[0].toISOString();
       feedbackStore.filters.endDate = dateRange[1].toISOString();
       feedbackStore.filters.repo = selectedRepo;
+
+      // 更新URL参数
+      updateUrlParams(dateRange[0], dateRange[1], selectedRepo);
 
       console.log('📝 更新后的全局筛选条件:', {
         startDate: feedbackStore.filters.startDate,
@@ -63,21 +139,36 @@ export default function Home() {
         throw new Error('网络连接已断开，请检查网络后重试');
       }
 
-      // 串行触发数据加载，避免并发请求过多
-      console.log('🔄 开始获取反馈数据...');
-      await fetchFeedbackData();
+      // 并行触发三个服务的数据加载
+      console.log('🔄 开始并行获取所有数据...');
+      const results = await Promise.allSettled([
+        fetchFeedbackData(),
+        fetchIssueResponseTimes(),
+        fetchPRData({
+          repos: prRepos,
+          startDate: dateRange[0].format('YYYY-MM-DD'),
+          endDate: dateRange[1].format('YYYY-MM-DD'),
+        }),
+      ]);
 
-      console.log('🔄 开始获取Issue响应时间...');
-      await fetchIssueResponseTimes();
+      // 检查执行结果并记录日志
+      const [feedbackResult, issueResult, prResult] = results;
 
-      console.log('🔄 开始获取PR数据...');
-      await fetchPRData({
-        repos: prRepos,
-        startDate: dateRange[0].format('YYYY-MM-DD'),
-        endDate: dateRange[1].format('YYYY-MM-DD'),
-      });
+      console.log('📊 数据获取结果:');
+      console.log(
+        '- 反馈数据:',
+        feedbackResult.status === 'fulfilled' ? '✅ 成功' : `❌ 失败: ${feedbackResult.reason}`
+      );
+      console.log(
+        '- Issue数据:',
+        issueResult.status === 'fulfilled' ? '✅ 成功' : `❌ 失败: ${issueResult.reason}`
+      );
+      console.log(
+        '- PR数据:',
+        prResult.status === 'fulfilled' ? '✅ 成功' : `❌ 失败: ${prResult.reason}`
+      );
 
-      console.log('✅ 所有数据获取完成');
+      console.log('✅ 所有数据获取完成（并行执行）');
     } catch (error) {
       console.error('❌ 查询数据失败:', error);
       // 错误会由各个store自行处理和显示
@@ -104,6 +195,9 @@ export default function Home() {
       feedbackStore.filters.startDate = startDate.toISOString();
       feedbackStore.filters.endDate = endDate.toISOString();
 
+      // 更新URL参数
+      updateUrlParams(startDate, endDate, selectedRepo);
+
       // 计算 PR 筛选参数
       const prRepos =
         !selectedRepo || selectedRepo === '' || selectedRepo === 'all'
@@ -122,21 +216,36 @@ export default function Home() {
         throw new Error('网络连接已断开，请检查网络后重试');
       }
 
-      // 串行触发数据加载，避免并发请求过多
-      console.log('🔄 开始获取反馈数据...');
-      await fetchFeedbackData();
+      // 并行触发三个服务的数据加载
+      console.log('🔄 开始并行获取所有数据...');
+      const results = await Promise.allSettled([
+        fetchFeedbackData(),
+        fetchIssueResponseTimes(),
+        fetchPRData({
+          repos: prRepos,
+          startDate: startDate.format('YYYY-MM-DD'),
+          endDate: endDate.format('YYYY-MM-DD'),
+        }),
+      ]);
 
-      console.log('🔄 开始获取Issue响应时间...');
-      await fetchIssueResponseTimes();
+      // 检查执行结果并记录日志
+      const [feedbackResult, issueResult, prResult] = results;
 
-      console.log('🔄 开始获取PR数据...');
-      await fetchPRData({
-        repos: prRepos,
-        startDate: startDate.format('YYYY-MM-DD'),
-        endDate: endDate.format('YYYY-MM-DD'),
-      });
+      console.log('📊 快捷日期数据获取结果:');
+      console.log(
+        '- 反馈数据:',
+        feedbackResult.status === 'fulfilled' ? '✅ 成功' : `❌ 失败: ${feedbackResult.reason}`
+      );
+      console.log(
+        '- Issue数据:',
+        issueResult.status === 'fulfilled' ? '✅ 成功' : `❌ 失败: ${issueResult.reason}`
+      );
+      console.log(
+        '- PR数据:',
+        prResult.status === 'fulfilled' ? '✅ 成功' : `❌ 失败: ${prResult.reason}`
+      );
 
-      console.log('✅ 所有数据获取完成');
+      console.log('✅ 所有数据获取完成（并行执行）');
     } catch (error) {
       console.error('❌ 快捷日期选择数据获取失败:', error);
       // 错误会由各个store自行处理和显示
@@ -220,13 +329,7 @@ export default function Home() {
                     <div className="flex items-center space-x-2">
                       <RangePicker
                         value={dateRange}
-                        onChange={dates => {
-                          if (dates && dates[0] && dates[1]) {
-                            setDateRange([dates[0], dates[1]]);
-                            feedbackStore.filters.startDate = dates[0].toISOString();
-                            feedbackStore.filters.endDate = dates[1].toISOString();
-                          }
-                        }}
+                        onChange={handleDateRangeChange}
                         size="small"
                         className="flex-1"
                       />
@@ -298,5 +401,13 @@ export default function Home() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div>加载中...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
