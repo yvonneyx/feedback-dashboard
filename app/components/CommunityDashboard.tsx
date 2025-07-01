@@ -512,20 +512,6 @@ export default function CommunityDashboard() {
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={8}>
           <ExecutiveMetricCard
-            title="Issue 解决率"
-            value={executiveMetrics.issueResolveRate}
-            target={80}
-            icon={<CheckCircleOutlined />}
-            isGood={executiveMetrics.issueResolveRate >= 80}
-            loading={feedbackData.issueAnalyticsLoading}
-            showRepoTable={shouldShowRepoTable}
-            repoTableData={repoIssueMetrics}
-            repoTableType="issue"
-          />
-        </Col>
-
-        <Col xs={24} lg={8}>
-          <ExecutiveMetricCard
             title="Issue 48h 响应率"
             value={executiveMetrics.issue48hResponseRate}
             target={100}
@@ -535,6 +521,20 @@ export default function CommunityDashboard() {
             showRepoTable={shouldShowRepoTable}
             repoTableData={repoIssueMetrics}
             repoTableType="issue48h"
+          />
+        </Col>
+
+        <Col xs={24} lg={8}>
+          <ExecutiveMetricCard
+            title="Issue 解决率"
+            value={executiveMetrics.issueResolveRate}
+            target={80}
+            icon={<CheckCircleOutlined />}
+            isGood={executiveMetrics.issueResolveRate >= 80}
+            loading={feedbackData.issueAnalyticsLoading}
+            showRepoTable={shouldShowRepoTable}
+            repoTableData={repoIssueMetrics}
+            repoTableType="issue"
           />
         </Col>
 
