@@ -514,9 +514,9 @@ export default function CommunityDashboard() {
           <ExecutiveMetricCard
             title="Issue 48h 响应率"
             value={executiveMetrics.issue48hResponseRate}
-            target={100}
+            target={95}
             icon={<ClockCircleOutlined />}
-            isGood={executiveMetrics.issue48hResponseRate >= 100}
+            isGood={executiveMetrics.issue48hResponseRate >= 95}
             loading={feedbackData.issueAnalyticsLoading}
             showRepoTable={shouldShowRepoTable}
             repoTableData={repoIssueMetrics}

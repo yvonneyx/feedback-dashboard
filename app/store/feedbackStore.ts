@@ -242,7 +242,7 @@ export function calculateRepoIssueMetrics(): RepoMetrics[] {
       resolvedIssues,
       responded48hIssues,
       isIssueResolveGood: issueResolveRate >= 80,
-      isIssue48hResponseGood: issue48hResponseRate >= 100,
+      isIssue48hResponseGood: issue48hResponseRate >= 95,
     });
   });
 
