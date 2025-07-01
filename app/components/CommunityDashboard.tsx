@@ -1,6 +1,10 @@
 'use client';
 
-import { feedbackStore } from '@/app/store/feedbackStore';
+import {
+  calculateRepoDocMetrics,
+  calculateRepoIssueMetrics,
+  feedbackStore,
+} from '@/app/store/feedbackStore';
 import { prStore } from '@/app/store/prStore';
 import {
   CheckCircleOutlined,
@@ -52,6 +56,9 @@ const ExecutiveMetricCard = ({
   unit = '%',
   isGood,
   loading = false,
+  showRepoTable = false,
+  repoTableData = [],
+  repoTableType = 'issue',
 }: {
   title: string;
   value: number;
@@ -60,8 +67,155 @@ const ExecutiveMetricCard = ({
   unit?: string;
   isGood: boolean;
   loading?: boolean;
+  showRepoTable?: boolean;
+  repoTableData?: any[];
+  repoTableType?: 'issue' | 'doc' | 'issue48h';
 }) => {
   const percentage = Math.min((value / target) * 100, 100);
+
+  // 获取表格列配置
+  const getTableColumns = () => {
+    const baseColumns = [
+      {
+        title: '仓库',
+        dataIndex: 'repoName' as keyof any,
+        key: 'repoName',
+        width: 80,
+        render: (text: string) => <span className="font-medium text-gray-700">{text}</span>,
+      },
+    ];
+
+    if (repoTableType === 'issue') {
+      return [
+        ...baseColumns,
+        {
+          title: '解决率',
+          dataIndex: 'issueResolveRate' as keyof any,
+          key: 'issueResolveRate',
+          width: 80,
+          render: (rate: number, record: any) => (
+            <span
+              className={`font-semibold ${
+                record.isIssueResolveGood ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
+              {rate}%
+            </span>
+          ),
+        },
+        {
+          title: '已解决/总数',
+          key: 'resolved',
+          width: 100,
+          render: (_: any, record: any) => (
+            <span className="text-sm text-gray-600">
+              {record.resolvedIssues}/{record.totalIssues}
+            </span>
+          ),
+        },
+        {
+          title: '状态',
+          key: 'status',
+          width: 60,
+          render: (_: any, record: any) => (
+            <span
+              className={`inline-block w-3 h-3 rounded-full ${
+                record.isIssueResolveGood ? 'bg-green-500' : 'bg-red-500'
+              }`}
+            />
+          ),
+        },
+      ];
+    }
+
+    if (repoTableType === 'issue48h') {
+      return [
+        ...baseColumns,
+        {
+          title: '48h响应率',
+          dataIndex: 'issue48hResponseRate' as keyof any,
+          key: 'issue48hResponseRate',
+          width: 100,
+          render: (rate: number, record: any) => (
+            <span
+              className={`font-semibold ${
+                record.isIssue48hResponseGood ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
+              {rate}%
+            </span>
+          ),
+        },
+        {
+          title: '48h响应/总数',
+          key: 'responded',
+          width: 120,
+          render: (_: any, record: any) => (
+            <span className="text-sm text-gray-600">
+              {record.responded48hIssues}/{record.totalIssues}
+            </span>
+          ),
+        },
+        {
+          title: '状态',
+          key: 'status',
+          width: 60,
+          render: (_: any, record: any) => (
+            <span
+              className={`inline-block w-3 h-3 rounded-full ${
+                record.isIssue48hResponseGood ? 'bg-green-500' : 'bg-red-500'
+              }`}
+            />
+          ),
+        },
+      ];
+    }
+
+    if (repoTableType === 'doc') {
+      return [
+        ...baseColumns,
+        {
+          title: '解决率',
+          dataIndex: 'docResolveRate' as keyof any,
+          key: 'docResolveRate',
+          width: 80,
+          render: (rate: number, record: any) => (
+            <span
+              className={`font-semibold ${
+                record.isDocResolveGood ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
+              {rate}%
+            </span>
+          ),
+        },
+        {
+          title: '已解决/总数',
+          key: 'resolved',
+          width: 100,
+          render: (_: any, record: any) => (
+            <span className="text-sm text-gray-600">
+              {record.resolvedDocs}/{record.totalDocs}
+            </span>
+          ),
+        },
+        {
+          title: '状态',
+          key: 'status',
+          width: 60,
+          render: (_: any, record: any) => (
+            <span
+              className={`inline-block w-3 h-3 rounded-full ${
+                record.isDocResolveGood ? 'bg-green-500' : 'bg-red-500'
+              }`}
+            />
+          ),
+        },
+      ];
+    }
+
+    return baseColumns;
+  };
 
   return (
     <div
@@ -167,6 +321,51 @@ const ExecutiveMetricCard = ({
           />
         </div>
       </div>
+
+      {/* 仓库指标表格 */}
+      {showRepoTable && repoTableData.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="text-xs text-gray-600 mb-2 font-medium">各仓库指标</div>
+
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-gray-50">
+                {getTableColumns().map((col, index) => (
+                  <th
+                    key={col.key || index}
+                    className="px-2 py-1 text-left font-medium text-gray-700 border-b"
+                    style={{ width: col.width }}
+                  >
+                    {col.title}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {repoTableData.map(record => (
+                <tr key={record.repo} className="hover:bg-gray-50">
+                  {getTableColumns().map((col, colIndex) => {
+                    let cellContent: React.ReactNode = '';
+
+                    if (col.dataIndex) {
+                      const value = record[col.dataIndex as string];
+                      cellContent = col.render ? (col.render as any)(value, record) : value;
+                    } else if (col.render) {
+                      cellContent = (col.render as any)(undefined, record);
+                    }
+
+                    return (
+                      <td key={col.key || colIndex} className="px-2 py-1 border-b border-gray-100">
+                        {cellContent}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* 装饰性背景图案 */}
       <div
@@ -301,6 +500,13 @@ export default function CommunityDashboard() {
 
   const executiveMetrics = calculateExecutiveMetrics();
 
+  // 计算各仓库指标数据
+  const repoIssueMetrics = calculateRepoIssueMetrics();
+  const repoDocMetrics = calculateRepoDocMetrics();
+
+  // 判断是否显示仓库表格（只有选择全部仓库时才显示）
+  const shouldShowRepoTable = !feedbackData.filters.repo || feedbackData.filters.repo === '';
+
   return (
     <div className="space-y-4">
       <Row gutter={[16, 16]}>
@@ -312,6 +518,9 @@ export default function CommunityDashboard() {
             icon={<CheckCircleOutlined />}
             isGood={executiveMetrics.issueResolveRate >= 80}
             loading={feedbackData.issueAnalyticsLoading}
+            showRepoTable={shouldShowRepoTable}
+            repoTableData={repoIssueMetrics}
+            repoTableType="issue"
           />
         </Col>
 
@@ -323,6 +532,9 @@ export default function CommunityDashboard() {
             icon={<ClockCircleOutlined />}
             isGood={executiveMetrics.issue48hResponseRate >= 100}
             loading={feedbackData.issueAnalyticsLoading}
+            showRepoTable={shouldShowRepoTable}
+            repoTableData={repoIssueMetrics}
+            repoTableType="issue48h"
           />
         </Col>
 
@@ -334,6 +546,9 @@ export default function CommunityDashboard() {
             icon={<FileTextOutlined />}
             isGood={executiveMetrics.docResolveRate >= 100}
             loading={feedbackData.loading}
+            showRepoTable={shouldShowRepoTable}
+            repoTableData={repoDocMetrics}
+            repoTableType="doc"
           />
         </Col>
       </Row>

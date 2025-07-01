@@ -33,6 +33,29 @@ export const ALL_PRODUCTS = [
   { label: 'Charts', value: 'ant-design/ant-design-charts' },
 ];
 
+// 定义各仓库指标数据接口
+export interface RepoMetrics {
+  repo: string;
+  repoName: string;
+  issueResolveRate: number;
+  issue48hResponseRate: number;
+  totalIssues: number;
+  resolvedIssues: number;
+  responded48hIssues: number;
+  isIssueResolveGood: boolean;
+  isIssue48hResponseGood: boolean;
+}
+
+// 定义文档反馈仓库指标接口
+export interface DocRepoMetrics {
+  repo: string;
+  repoName: string;
+  docResolveRate: number;
+  totalDocs: number;
+  resolvedDocs: number;
+  isDocResolveGood: boolean;
+}
+
 // 初始化状态
 export const feedbackStore = proxy<FeedbackState>({
   filters: {
@@ -181,4 +204,108 @@ async function fetchProductData(repo: string) {
     feedbackStore.productResponseTimes[repo] = [];
     return [];
   }
+}
+
+// 计算各仓库Issue指标
+export function calculateRepoIssueMetrics(): RepoMetrics[] {
+  const repoMetrics: RepoMetrics[] = [];
+
+  // 只有在选择全部仓库时才计算各仓库指标
+  if (feedbackStore.filters.repo) {
+    return repoMetrics;
+  }
+
+  // 遍历所有仓库，确保每个仓库都被列出
+  ALL_PRODUCTS.forEach(product => {
+    const repo = product.value;
+    const issues = feedbackStore.productResponseTimes[repo] || [];
+
+    const repoName = formatRepoName(repo);
+    const totalIssues = issues.length;
+    const resolvedIssues = issues.filter((issue: any) => issue.state === 'closed').length;
+    const responded48hIssues = issues.filter(
+      (issue: any) =>
+        issue.hasResponse && issue.responseTimeInHours !== null && issue.responseTimeInHours <= 48
+    ).length;
+
+    const issueResolveRate =
+      totalIssues > 0 ? Math.round((resolvedIssues / totalIssues) * 100) : 100;
+    const issue48hResponseRate =
+      totalIssues > 0 ? Math.round((responded48hIssues / totalIssues) * 100) : 100;
+
+    repoMetrics.push({
+      repo,
+      repoName,
+      issueResolveRate,
+      issue48hResponseRate,
+      totalIssues,
+      resolvedIssues,
+      responded48hIssues,
+      isIssueResolveGood: issueResolveRate >= 80,
+      isIssue48hResponseGood: issue48hResponseRate >= 100,
+    });
+  });
+
+  // 按仓库名排序
+  return repoMetrics.sort((a, b) => a.repoName.localeCompare(b.repoName));
+}
+
+// 计算各仓库文档反馈指标
+export function calculateRepoDocMetrics(): DocRepoMetrics[] {
+  const repoMetrics: DocRepoMetrics[] = [];
+
+  // 只有在选择全部仓库时才计算各仓库指标
+  if (feedbackStore.filters.repo || !feedbackStore.data) {
+    return repoMetrics;
+  }
+
+  // 按仓库分组统计文档反馈
+  const repoDocStats: { [key: string]: { total: number; resolved: number } } = {};
+
+  // 初始化所有仓库的统计数据
+  ALL_PRODUCTS.forEach(product => {
+    repoDocStats[product.value] = { total: 0, resolved: 0 };
+  });
+
+  feedbackStore.data.forEach((item: any) => {
+    // 只统计文档建议（非评价）
+    if (item.rating) return;
+
+    const repo = item.repo || 'unknown';
+    if (!repoDocStats[repo]) {
+      repoDocStats[repo] = { total: 0, resolved: 0 };
+    }
+
+    repoDocStats[repo].total += 1;
+    if (item.isResolved === '1') {
+      repoDocStats[repo].resolved += 1;
+    }
+  });
+
+  // 遍历所有仓库，确保每个仓库都被列出
+  ALL_PRODUCTS.forEach(product => {
+    const repo = product.value;
+    const stats = repoDocStats[repo] || { total: 0, resolved: 0 };
+    const repoName = formatRepoName(repo);
+    const docResolveRate = stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 100;
+
+    repoMetrics.push({
+      repo,
+      repoName,
+      docResolveRate,
+      totalDocs: stats.total,
+      resolvedDocs: stats.resolved,
+      isDocResolveGood: docResolveRate >= 100,
+    });
+  });
+
+  // 按仓库名排序
+  return repoMetrics.sort((a, b) => a.repoName.localeCompare(b.repoName));
+}
+
+// 格式化仓库名称
+function formatRepoName(repo: string): string {
+  if (repo === 'ant-design/ant-design-charts') return 'Charts';
+  const repoName = repo.split('/').pop();
+  return repoName ? repoName.toUpperCase() : repo;
 }
