@@ -2,7 +2,7 @@
 
 import { feedbackStore } from '@/app/store/feedbackStore';
 import { CheckCircleOutlined, GithubOutlined } from '@ant-design/icons';
-import { Button, Empty, Space, Spin, Table, TableColumnsType, Tag, Typography } from 'antd';
+import { Button, Empty, Spin, Table, TableColumnsType, Tag, Typography } from 'antd';
 import { useSnapshot } from 'valtio';
 
 const { Text } = Typography;
@@ -12,10 +12,7 @@ interface IssueDataDisplayProps {
 }
 
 export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
-  const { error, issueResponseTimes, issueAnalyticsLoading, filters } = useSnapshot(feedbackStore);
-
-  // 判断是否显示仓库列
-  const showRepoColumn = !filters.repo;
+  const { error, issueResponseTimes, issueAnalyticsLoading } = useSnapshot(feedbackStore);
 
   // 格式化数据的辅助函数
   const formatDate = (dateString: string) => dateString?.split('T')[0] || '';
@@ -60,11 +57,8 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
         ),
         width: 100,
       },
-    ];
-
-    // 如果显示所有仓库，添加仓库列
-    if (showRepoColumn) {
-      columns.push({
+      // 总是显示仓库列
+      {
         title: '仓库',
         key: 'repo',
         width: 100,
@@ -89,11 +83,7 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
         ],
         onFilter: (value: any, record: any) =>
           getRepoFromUrl(record.html_url).toLowerCase() === value,
-      });
-    }
-
-    // 添加标题和其他通用列
-    columns.push(
+      },
       {
         title: '标题',
         dataIndex: 'title',
@@ -113,8 +103,8 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
         render: (time: string) => formatDate(time),
         sorter: (a: any, b: any) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      }
-    );
+      },
+    ];
 
     return columns;
   };
@@ -240,37 +230,23 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
       ) : getDataSource().length === 0 && !error ? (
         renderEmptyState()
       ) : (
-        <div>
-          {!filters.repo && (
-            <div className="mb-3">
-              <Space size="small">
-                <Text type="secondary" className="text-sm">
-                  显示全部仓库数据
-                </Text>
-                <Tag color="processing" className="rounded-full">
-                  {getDataSource().length} 条记录
-                </Tag>
-              </Space>
-            </div>
-          )}
-          <Table
-            dataSource={getDataSource()}
-            rowKey={dataType === 'issue-response-times' ? 'number' : 'id'}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: total => `共 ${total} 条记录`,
-              className: 'custom-pagination',
-            }}
-            columns={getColumns()}
-            className="custom-table hover-row-highlight"
-            rowClassName={(_, index) => (index % 2 === 0 ? 'bg-gray-50/50' : '')}
-            onRow={_ => ({
-              className: 'transition-all duration-200 hover:bg-blue-50/50',
-            })}
-          />
-        </div>
+        <Table
+          dataSource={getDataSource()}
+          rowKey={dataType === 'issue-response-times' ? 'number' : 'id'}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: total => `共 ${total} 条记录`,
+            className: 'custom-pagination',
+          }}
+          columns={getColumns()}
+          className="custom-table hover-row-highlight"
+          rowClassName={(_, index) => (index % 2 === 0 ? 'bg-gray-50/50' : '')}
+          onRow={_ => ({
+            className: 'transition-all duration-200 hover:bg-blue-50/50',
+          })}
+        />
       )}
     </div>
   );

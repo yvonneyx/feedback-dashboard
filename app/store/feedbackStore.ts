@@ -6,7 +6,7 @@ interface FeedbackState {
   filters: {
     startDate: string;
     endDate: string;
-    repo: string;
+    repos: string[];
   };
   loading: boolean;
   data: any[] | null;
@@ -61,7 +61,7 @@ export const feedbackStore = proxy<FeedbackState>({
   filters: {
     startDate: dayjs().startOf('month').toISOString(), // 当月第一天
     endDate: dayjs().toISOString(),
-    repo: '',
+    repos: [],
   },
   loading: false,
   data: null,
@@ -78,13 +78,18 @@ export function updateDateRange(startDate: string, endDate: string) {
   feedbackStore.filters.endDate = endDate;
 }
 
-// 更新仓库筛选
-export function updateRepo(repo: string) {
-  feedbackStore.filters.repo = repo;
+// 更新仓库筛选 - 修改为支持多仓库
+export function updateRepos(repos: string[]) {
+  feedbackStore.filters.repos = repos;
 }
 
-// 触发数据获取
-export async function fetchFeedbackData() {
+// 保留旧的单仓库接口以兼容现有代码
+export function updateRepo(repo: string) {
+  feedbackStore.filters.repos = repo ? [repo] : [];
+}
+
+// 支持取消的反馈数据获取
+export async function fetchFeedbackDataWithCancel(signal?: AbortSignal) {
   feedbackStore.loading = true;
   feedbackStore.error = null;
 
@@ -94,7 +99,12 @@ export async function fetchFeedbackData() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(feedbackStore.filters),
+      body: JSON.stringify({
+        startDate: feedbackStore.filters.startDate,
+        endDate: feedbackStore.filters.endDate,
+        repos: feedbackStore.filters.repos,
+      }),
+      signal, // 传递AbortSignal
     });
 
     if (!response.ok) {
@@ -102,9 +112,12 @@ export async function fetchFeedbackData() {
     }
 
     const data = await response.json();
-
     feedbackStore.data = data;
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.log('⏭️ 反馈数据请求被取消');
+      return; // 不设置错误状态
+    }
     feedbackStore.error = error instanceof Error ? error.message : '未知错误';
     console.error('Error fetching feedback data:', error);
   } finally {
@@ -112,34 +125,47 @@ export async function fetchFeedbackData() {
   }
 }
 
-// 获取GitHub Issue响应时间分析 - 并发调用多个仓库API
-export async function fetchIssueResponseTimes() {
+// 支持取消的Issue响应时间分析
+export async function fetchIssueResponseTimesWithCancel(signal?: AbortSignal) {
   feedbackStore.issueAnalyticsLoading = true;
   feedbackStore.error = null;
 
   try {
-    const selectedRepo = feedbackStore.filters.repo;
+    const selectedRepos = feedbackStore.filters.repos;
 
-    // 如果没有选择具体仓库，获取所有仓库数据
-    if (!selectedRepo) {
-      // 清空之前的数据
-      feedbackStore.productResponseTimes = {};
-      feedbackStore.issueResponseTimes = [];
-
-      // 并发请求所有仓库数据
-      const fetchPromises = ALL_PRODUCTS.map(product => fetchProductData(product.value));
-      await Promise.all(fetchPromises);
-
-      // 合并所有仓库数据为总数据
-      const allIssues = Object.values(feedbackStore.productResponseTimes).flat();
-      feedbackStore.issueResponseTimes = allIssues;
-
-      console.log(`获取了${allIssues.length}个跨仓库Issues`);
+    // 确定要查询的仓库列表
+    let reposToFetch: string[];
+    if (selectedRepos.length === 0) {
+      reposToFetch = ALL_PRODUCTS.map(p => p.value);
     } else {
-      // 获取单个仓库数据
-      await fetchProductData(selectedRepo);
+      reposToFetch = selectedRepos;
     }
-  } catch (error) {
+
+    // 清空之前的数据
+    feedbackStore.productResponseTimes = {};
+    feedbackStore.issueResponseTimes = [];
+
+    // 并发请求所有需要的仓库数据
+    const fetchPromises = reposToFetch.map(repo => fetchProductDataWithCancel(repo, signal));
+    await Promise.all(fetchPromises);
+
+    // 检查是否被取消
+    if (signal?.aborted) {
+      throw new Error('AbortError');
+    }
+
+    // 合并选中仓库的数据为总数据
+    const selectedIssues = reposToFetch.flatMap(
+      repo => feedbackStore.productResponseTimes[repo] || []
+    );
+    feedbackStore.issueResponseTimes = selectedIssues;
+
+    console.log(`获取了${selectedIssues.length}个Issues，覆盖${reposToFetch.length}个仓库`);
+  } catch (error: any) {
+    if (error.name === 'AbortError' || error.message === 'AbortError') {
+      console.log('⏭️ Issue数据请求被取消');
+      return; // 不设置错误状态
+    }
     feedbackStore.error = error instanceof Error ? error.message : '未知错误';
     console.error('获取GitHub Issue数据错误:', error);
   } finally {
@@ -147,13 +173,9 @@ export async function fetchIssueResponseTimes() {
   }
 }
 
-// 获取单个仓库数据
-async function fetchProductData(repo: string) {
-  console.log(feedbackStore.filters);
+// 支持取消的单个仓库数据获取
+async function fetchProductDataWithCancel(repo: string, signal?: AbortSignal) {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2分钟超时
-
     const response = await fetch('/api/github-issues', {
       method: 'POST',
       headers: {
@@ -164,10 +186,8 @@ async function fetchProductData(repo: string) {
         endDate: feedbackStore.filters.endDate,
         repo: repo,
       }),
-      signal: controller.signal,
+      signal, // 传递AbortSignal
     });
-
-    clearTimeout(timeoutId); // 清除超时计时器
 
     if (!response.ok) {
       throw new Error(`获取${repo}数据失败: ${response.status} ${response.statusText}`);
@@ -175,49 +195,48 @@ async function fetchProductData(repo: string) {
 
     const data = await response.json();
 
-    console.log(
-      `📥 ${repo} API返回数据样例:`,
-      data.slice(0, 2).map((item: any) => ({
-        number: item.number,
-        hasResponse: item.hasResponse,
-        responseTimeInHours: item.responseTimeInHours,
-        meetsSLA: item.meetsSLA,
-      }))
-    );
+    // 检查是否被取消
+    if (signal?.aborted) {
+      throw new Error('AbortError');
+    }
 
     // 存储到对应仓库的数据集
     feedbackStore.productResponseTimes[repo] = data;
 
-    // 如果是当前选择的仓库，也更新主数据集
-    if (repo === feedbackStore.filters.repo) {
-      feedbackStore.issueResponseTimes = data;
-    }
-
     console.log(`获取了${data.length}个${repo} Issues`);
-
     return data;
-  } catch (error) {
-    // 更详细的错误日志
+  } catch (error: any) {
+    if (error.name === 'AbortError' || error.message === 'AbortError') {
+      console.log(`⏭️ ${repo}数据请求被取消`);
+      return [];
+    }
     const errorMessage = error instanceof Error ? error.message : '未知错误';
     console.error(`获取${repo}数据错误:`, errorMessage);
-    // 确保即使单个仓库请求失败也不影响其他请求
     feedbackStore.productResponseTimes[repo] = [];
     return [];
   }
 }
 
-// 计算各仓库Issue指标
+// 计算各仓库Issue指标 - 修改逻辑以过滤显示选中的仓库
 export function calculateRepoIssueMetrics(): RepoMetrics[] {
   const repoMetrics: RepoMetrics[] = [];
 
-  // 只有在选择全部仓库时才计算各仓库指标
-  if (feedbackStore.filters.repo) {
+  // 只有在有Issue数据时才计算各仓库指标
+  if (Object.keys(feedbackStore.productResponseTimes).length === 0) {
     return repoMetrics;
   }
 
-  // 遍历所有仓库，确保每个仓库都被列出
-  ALL_PRODUCTS.forEach(product => {
-    const repo = product.value;
+  // 确定要显示的仓库列表
+  const reposToShow =
+    feedbackStore.filters.repos.length > 0
+      ? feedbackStore.filters.repos
+      : ALL_PRODUCTS.map(p => p.value);
+
+  // 遍历要显示的仓库
+  reposToShow.forEach(repo => {
+    const product = ALL_PRODUCTS.find(p => p.value === repo);
+    if (!product) return;
+
     const issues = feedbackStore.productResponseTimes[repo] || [];
 
     const repoName = formatRepoName(repo);
@@ -250,21 +269,27 @@ export function calculateRepoIssueMetrics(): RepoMetrics[] {
   return repoMetrics.sort((a, b) => a.repoName.localeCompare(b.repoName));
 }
 
-// 计算各仓库文档反馈指标
+// 计算各仓库文档反馈指标 - 修改逻辑以过滤显示选中的仓库
 export function calculateRepoDocMetrics(): DocRepoMetrics[] {
   const repoMetrics: DocRepoMetrics[] = [];
 
-  // 只有在选择全部仓库时才计算各仓库指标
-  if (feedbackStore.filters.repo || !feedbackStore.data) {
+  // 只有在有文档反馈数据时才计算各仓库指标
+  if (!feedbackStore.data) {
     return repoMetrics;
   }
+
+  // 确定要显示的仓库列表
+  const reposToShow =
+    feedbackStore.filters.repos.length > 0
+      ? feedbackStore.filters.repos
+      : ALL_PRODUCTS.map(p => p.value);
 
   // 按仓库分组统计文档反馈
   const repoDocStats: { [key: string]: { total: number; resolved: number } } = {};
 
-  // 初始化所有仓库的统计数据
-  ALL_PRODUCTS.forEach(product => {
-    repoDocStats[product.value] = { total: 0, resolved: 0 };
+  // 初始化要显示的仓库的统计数据
+  reposToShow.forEach(repo => {
+    repoDocStats[repo] = { total: 0, resolved: 0 };
   });
 
   feedbackStore.data.forEach((item: any) => {
@@ -272,6 +297,9 @@ export function calculateRepoDocMetrics(): DocRepoMetrics[] {
     if (item.rating) return;
 
     const repo = item.repo || 'unknown';
+    // 只统计要显示的仓库
+    if (!reposToShow.includes(repo)) return;
+
     if (!repoDocStats[repo]) {
       repoDocStats[repo] = { total: 0, resolved: 0 };
     }
@@ -282,9 +310,11 @@ export function calculateRepoDocMetrics(): DocRepoMetrics[] {
     }
   });
 
-  // 遍历所有仓库，确保每个仓库都被列出
-  ALL_PRODUCTS.forEach(product => {
-    const repo = product.value;
+  // 遍历要显示的仓库
+  reposToShow.forEach(repo => {
+    const product = ALL_PRODUCTS.find(p => p.value === repo);
+    if (!product) return;
+
     const stats = repoDocStats[repo] || { total: 0, resolved: 0 };
     const repoName = formatRepoName(repo);
     const docResolveRate = stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 100;
@@ -308,4 +338,14 @@ function formatRepoName(repo: string): string {
   if (repo === 'ant-design/ant-design-charts') return 'Charts';
   const repoName = repo.split('/').pop();
   return repoName ? repoName.toUpperCase() : repo;
+}
+
+// 触发数据获取（原有版本，保持向后兼容）
+export async function fetchFeedbackData() {
+  return fetchFeedbackDataWithCancel();
+}
+
+// 获取GitHub Issue响应时间分析（原有版本，保持向后兼容）
+export async function fetchIssueResponseTimes() {
+  return fetchIssueResponseTimesWithCancel();
 }

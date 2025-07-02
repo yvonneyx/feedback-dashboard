@@ -1,7 +1,7 @@
 'use client';
 
 import { ALL_PRODUCTS, feedbackStore } from '@/app/store/feedbackStore';
-import { getPRTypeColor, getPRTypeLabel, prStore } from '@/app/store/prStore';
+import { fetchPRData, getPRTypeColor, getPRTypeLabel, prStore } from '@/app/store/prStore';
 import { BarChartOutlined, LoadingOutlined, PullRequestOutlined } from '@ant-design/icons';
 import { Alert, Avatar, Card, Col, Progress, Row, Spin, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
@@ -71,27 +71,44 @@ export default function PRStats() {
   const { loading, data, error } = useSnapshot(prStore);
   const feedbackFilters = useSnapshot(feedbackStore.filters);
 
-  // 当全局筛选条件变化时，同步更新 PR 筛选条件（但不自动发起请求）
+  // 当全局筛选条件变化时，同步更新 PR 筛选条件并自动查询
   useEffect(() => {
     // 根据全局筛选条件更新 PR 筛选条件
     const repos =
-      !feedbackFilters.repo || feedbackFilters.repo === '' || feedbackFilters.repo === 'all'
+      !feedbackFilters.repos || feedbackFilters.repos.length === 0
         ? ALL_PRODUCTS.map(product => product.value)
-        : [feedbackFilters.repo];
+        : feedbackFilters.repos;
 
-    prStore.filters.startDate = dayjs(feedbackFilters.startDate).format('YYYY-MM-DD');
-    prStore.filters.endDate = dayjs(feedbackFilters.endDate).format('YYYY-MM-DD');
-    prStore.filters.repos = repos;
+    const newStartDate = dayjs(feedbackFilters.startDate).format('YYYY-MM-DD');
+    const newEndDate = dayjs(feedbackFilters.endDate).format('YYYY-MM-DD');
 
-    console.log('🔍 PR筛选条件更新:', {
-      全局仓库选择: feedbackFilters.repo,
-      处理后的仓库列表: repos,
-      仓库数量: repos.length,
-    });
+    // 检查筛选条件是否有变化
+    const hasChanged =
+      prStore.filters.startDate !== newStartDate ||
+      prStore.filters.endDate !== newEndDate ||
+      JSON.stringify(prStore.filters.repos) !== JSON.stringify(repos);
 
-    // 移除自动触发的 PR 数据获取，等待用户手动触发
-    // fetchPRData();
-  }, [feedbackFilters.startDate, feedbackFilters.endDate, feedbackFilters.repo]);
+    if (hasChanged) {
+      prStore.filters.startDate = newStartDate;
+      prStore.filters.endDate = newEndDate;
+      prStore.filters.repos = [...repos];
+
+      console.log('🔍 PR筛选条件更新:', {
+        全局仓库选择: feedbackFilters.repos,
+        处理后的仓库列表: repos,
+        仓库数量: repos.length,
+        日期范围: `${newStartDate} ~ ${newEndDate}`,
+      });
+
+      // 自动触发PR数据获取
+      console.log('🚀 PRStats: 筛选条件变化，自动获取PR数据...');
+      fetchPRData({
+        repos: [...repos],
+        startDate: newStartDate,
+        endDate: newEndDate,
+      });
+    }
+  }, [feedbackFilters.startDate, feedbackFilters.endDate, feedbackFilters.repos]);
 
   // 准备图表数据
   const chartData = useMemo(() => {
@@ -235,6 +252,20 @@ function PRDetails() {
       ),
     },
     {
+      title: '仓库',
+      dataIndex: 'repo',
+      key: 'repo',
+      width: 80,
+      render: (repo: string) => {
+        const repoName = repo.split('/').pop();
+        return (
+          <Tag color="blue" className="text-xs font-medium">
+            {repoName}
+          </Tag>
+        );
+      },
+    },
+    {
       title: '标题',
       dataIndex: 'title',
       key: 'title',
@@ -276,20 +307,6 @@ function PRDetails() {
           <div className="text-xs font-medium text-gray-800">{user.login}</div>
         </div>
       ),
-    },
-    {
-      title: '仓库',
-      dataIndex: 'repo',
-      key: 'repo',
-      width: 80,
-      render: (repo: string) => {
-        const repoName = repo.split('/').pop();
-        return (
-          <Tag color="blue" className="text-xs font-medium">
-            {repoName}
-          </Tag>
-        );
-      },
     },
     {
       title: '时间',

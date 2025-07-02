@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { startDate, endDate, repo } = await request.json();
+    const { startDate, endDate, repos } = await request.json();
 
     const appId = process.env.LEANCLOUD_APP_ID;
     const appKey = process.env.LEANCLOUD_APP_KEY;
@@ -22,8 +22,12 @@ export async function POST(request: Request) {
         $gte: { __type: 'Date', iso: startDate },
         $lt: { __type: 'Date', iso: endDate },
       },
-      ...(repo ? { repo } : {}),
     };
+
+    // 支持多仓库筛选
+    if (repos && repos.length > 0) {
+      where.repo = { $in: repos };
+    }
 
     const params = new URLSearchParams({
       limit: '1000',

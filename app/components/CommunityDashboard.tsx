@@ -14,13 +14,12 @@ import {
   IssuesCloseOutlined,
   PullRequestOutlined,
 } from '@ant-design/icons';
-import { Col, Divider, Row, Tabs, Tag, Typography } from 'antd';
+import { Col, Divider, Row, Tabs } from 'antd';
+import { useEffect, useMemo } from 'react';
 import { useSnapshot } from 'valtio';
 import DocDetails from './DocDetails';
 import IssueDetails from './IssueDetails';
 import PRStats from './PRStats';
-
-const { Text } = Typography;
 
 interface DashboardMetrics {
   prs: {
@@ -59,6 +58,7 @@ const ExecutiveMetricCard = ({
   showRepoTable = false,
   repoTableData = [],
   repoTableType = 'issue',
+  filters,
 }: {
   title: string;
   value: number;
@@ -70,7 +70,17 @@ const ExecutiveMetricCard = ({
   showRepoTable?: boolean;
   repoTableData?: any[];
   repoTableType?: 'issue' | 'doc' | 'issue48h';
+  filters?: { repos: readonly string[] };
 }) => {
+  // 添加调试日志
+  console.log(`🎯 ExecutiveMetricCard [${title}]:`, {
+    value,
+    target,
+    isGood,
+    loading,
+    repoTableDataLength: repoTableData.length,
+  });
+
   const percentage = Math.min((value / target) * 100, 100);
 
   // 获取表格列配置
@@ -325,7 +335,11 @@ const ExecutiveMetricCard = ({
       {/* 仓库指标表格 */}
       {showRepoTable && repoTableData.length > 0 && (
         <div className="mt-3 pt-3 border-t border-gray-200">
-          <div className="text-xs text-gray-600 mb-2 font-medium">各仓库指标</div>
+          <div className="text-xs text-gray-600 mb-2 font-medium">
+            {filters?.repos && filters.repos.length > 0
+              ? `已选中 ${filters.repos.length} 个仓库的指标`
+              : '各仓库指标'}
+          </div>
 
           <table className="w-full text-xs">
             <thead>
@@ -382,6 +396,45 @@ export default function CommunityDashboard() {
   const prData = useSnapshot(prStore);
   const feedbackData = useSnapshot(feedbackStore);
 
+  // 添加数据变化监听和调试
+  useEffect(() => {
+    console.log('🎯 CommunityDashboard数据变化监听:', {
+      feedbackData: {
+        loading: feedbackData.loading,
+        issueAnalyticsLoading: feedbackData.issueAnalyticsLoading,
+        data: feedbackData.data?.length || 0,
+        issueResponseTimes: feedbackData.issueResponseTimes?.length || 0,
+        productResponseTimes: Object.keys(feedbackData.productResponseTimes || {}).length,
+        filters: feedbackData.filters,
+      },
+      prData: {
+        loading: prData.loading,
+        data: prData.data?.rawData?.length || 0,
+        filters: prData.filters,
+      },
+      calculatedMetrics: {
+        issueTotal: feedbackData.issueResponseTimes?.length || 0,
+        issueResolved:
+          feedbackData.issueResponseTimes?.filter((issue: any) => issue.state === 'closed')
+            .length || 0,
+        docTotal: feedbackData.data?.filter((item: any) => !item.rating).length || 0,
+        docResolved:
+          feedbackData.data?.filter((item: any) => !item.rating && item.isResolved === '1')
+            .length || 0,
+      },
+    });
+  }, [
+    feedbackData.loading,
+    feedbackData.issueAnalyticsLoading,
+    feedbackData.data,
+    feedbackData.issueResponseTimes,
+    feedbackData.productResponseTimes,
+    feedbackData.filters,
+    prData.loading,
+    prData.data,
+    prData.filters,
+  ]);
+
   // 计算48小时响应率
   const calculate48hResponseRate = (issues: readonly any[]) => {
     if (!issues || issues.length === 0) return 100; // 没有Issue时，认为响应率为100%
@@ -414,11 +467,11 @@ export default function CommunityDashboard() {
   const getFilteredDiscussions = () => {
     if (!feedbackData.data) return [];
 
-    // 如果选择了特定仓库，只显示该仓库的数据
-    if (feedbackData.filters.repo && feedbackData.filters.repo !== '') {
+    // 如果选择了特定仓库，只显示这些仓库的数据
+    if (feedbackData.filters.repos && feedbackData.filters.repos.length > 0) {
       return feedbackData.data.filter((item: any) => {
         // 根据API中的查询条件，使用 repo 字段进行筛选
-        return item.repo === feedbackData.filters.repo;
+        return feedbackData.filters.repos.includes(item.repo);
       });
     }
 
@@ -481,7 +534,7 @@ export default function CommunityDashboard() {
       : 100; // 没有文档建议时，认为处理率为100%
 
   // 计算管理层关注的核心指标
-  const calculateExecutiveMetrics = () => {
+  const executiveMetrics = useMemo(() => {
     // Issue 解决率
     const issueResolveRate = metrics.issues.resolveRate;
 
@@ -491,27 +544,66 @@ export default function CommunityDashboard() {
     // 文档解决率
     const docResolveRate = metrics.discussions.answerRate;
 
+    console.log('📈 计算管理层指标:', {
+      issueResolveRate,
+      issue48hResponseRate,
+      docResolveRate,
+      来源数据: {
+        totalIssues: metrics.issues.total,
+        resolvedIssues: metrics.issues.resolved,
+        totalDiscussions: metrics.discussions.total,
+        answeredDiscussions: metrics.discussions.answered,
+        issueResponseTimes长度: feedbackData.issueResponseTimes?.length || 0,
+        feedbackData长度: feedbackData.data?.length || 0,
+      },
+    });
+
     return {
       issueResolveRate,
       issue48hResponseRate,
       docResolveRate,
     };
-  };
-
-  const executiveMetrics = calculateExecutiveMetrics();
+  }, [
+    metrics.issues.resolveRate,
+    metrics.issues.response48hRate,
+    metrics.discussions.answerRate,
+    metrics.issues.total,
+    metrics.issues.resolved,
+    metrics.discussions.total,
+    metrics.discussions.answered,
+    feedbackData.issueResponseTimes?.length,
+    feedbackData.data?.length,
+  ]);
 
   // 计算各仓库指标数据
   const repoIssueMetrics = calculateRepoIssueMetrics();
   const repoDocMetrics = calculateRepoDocMetrics();
 
-  // 判断是否显示仓库表格（只有选择全部仓库时才显示）
-  const shouldShowRepoTable = !feedbackData.filters.repo || feedbackData.filters.repo === '';
+  console.log('📊 仓库指标数据:', {
+    repoIssueMetrics: repoIssueMetrics.length,
+    repoDocMetrics: repoDocMetrics.length,
+    executiveMetrics,
+    数据状态: {
+      feedbackData数据长度: feedbackData.data?.length || 0,
+      issueResponseTimes长度: feedbackData.issueResponseTimes?.length || 0,
+      当前筛选仓库: feedbackData.filters.repos,
+      loading状态: {
+        feedback: feedbackData.loading,
+        issue: feedbackData.issueAnalyticsLoading,
+        pr: prData.loading,
+      },
+    },
+  });
+
+  // 判断是否显示仓库表格（有数据就显示）
+  const shouldShowRepoTable = true; // 总是显示表格，让数据决定是否有内容
 
   return (
     <div className="space-y-4">
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={8}>
           <ExecutiveMetricCard
+            key={`issue48h-${feedbackData.issueResponseTimes?.length || 0}-${feedbackData.filters.repos.join(',')}`}
             title="Issue 48h 响应率"
             value={executiveMetrics.issue48hResponseRate}
             target={95}
@@ -521,11 +613,13 @@ export default function CommunityDashboard() {
             showRepoTable={shouldShowRepoTable}
             repoTableData={repoIssueMetrics}
             repoTableType="issue48h"
+            filters={feedbackData.filters}
           />
         </Col>
 
         <Col xs={24} lg={8}>
           <ExecutiveMetricCard
+            key={`issue-resolve-${feedbackData.issueResponseTimes?.length || 0}-${feedbackData.filters.repos.join(',')}`}
             title="Issue 解决率"
             value={executiveMetrics.issueResolveRate}
             target={80}
@@ -535,11 +629,13 @@ export default function CommunityDashboard() {
             showRepoTable={shouldShowRepoTable}
             repoTableData={repoIssueMetrics}
             repoTableType="issue"
+            filters={feedbackData.filters}
           />
         </Col>
 
         <Col xs={24} lg={8}>
           <ExecutiveMetricCard
+            key={`doc-resolve-${feedbackData.data?.length || 0}-${feedbackData.filters.repos.join(',')}`}
             title="文档解决率"
             value={executiveMetrics.docResolveRate}
             target={100}
@@ -549,6 +645,7 @@ export default function CommunityDashboard() {
             showRepoTable={shouldShowRepoTable}
             repoTableData={repoDocMetrics}
             repoTableType="doc"
+            filters={feedbackData.filters}
           />
         </Col>
       </Row>
@@ -558,7 +655,6 @@ export default function CommunityDashboard() {
       {/* 详情面板 - Tabs布局 */}
       <Tabs
         defaultActiveKey="prs"
-        className="custom-tabs"
         items={[
           {
             key: 'prs',
@@ -566,14 +662,6 @@ export default function CommunityDashboard() {
               <div className="flex items-center px-2">
                 <PullRequestOutlined className="text-slate-600 mr-2" />
                 <span className="font-medium text-slate-700">Pull Requests</span>
-                <div className="ml-3 flex items-center space-x-2">
-                  <Text type="secondary" className="text-xs">
-                    {metrics.prs.total}个 · 合并率{metrics.prs.mergeRate}%
-                  </Text>
-                  <Tag color="blue" className="border-blue-300 text-blue-600 rounded-full text-xs">
-                    {metrics.prs.total}
-                  </Tag>
-                </div>
               </div>
             ),
             children: (
@@ -588,17 +676,6 @@ export default function CommunityDashboard() {
               <div className="flex items-center px-2">
                 <IssuesCloseOutlined className="text-slate-600 mr-2" />
                 <span className="font-medium text-slate-700">Issues</span>
-                <div className="ml-3 flex items-center space-x-2">
-                  <Text type="secondary" className="text-xs">
-                    {metrics.issues.total}个 · 48h响应{metrics.issues.response48hRate}%
-                  </Text>
-                  <Tag
-                    color="orange"
-                    className="border-orange-300 text-orange-600 rounded-full text-xs"
-                  >
-                    {metrics.issues.total}
-                  </Tag>
-                </div>
               </div>
             ),
             children: (
@@ -613,17 +690,6 @@ export default function CommunityDashboard() {
               <div className="flex items-center px-2">
                 <CommentOutlined className="text-slate-600 mr-2" />
                 <span className="font-medium text-slate-700">文档建议</span>
-                <div className="ml-3 flex items-center space-x-2">
-                  <Text type="secondary" className="text-xs">
-                    {metrics.discussions.total}个 · 处理率{metrics.discussions.answerRate}%
-                  </Text>
-                  <Tag
-                    color="green"
-                    className="border-green-300 text-green-600 rounded-full text-xs"
-                  >
-                    {metrics.discussions.total}
-                  </Tag>
-                </div>
               </div>
             ),
             children: (

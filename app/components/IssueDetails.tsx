@@ -74,8 +74,8 @@ export default function IssueDetails() {
     metrics.total > 0 ? Math.round((metrics.response48h / metrics.total) * 100) : 0;
 
   // 生成标签文字
-  const getTabTitle = () => {
-    return filters.repo ? `待响应 Issue` : `待响应 Issue (全部)`;
+  const getTitleText = () => {
+    return filters.repos.length > 0 ? `待响应 Issue` : `待响应 Issue (全部)`;
   };
 
   return (
@@ -151,7 +151,7 @@ export default function IssueDetails() {
               <div className="flex items-center">
                 <ClockCircleOutlined className="mr-1 text-slate-600" />
                 <Badge count={metrics.unresponded} size="small" className="mr-1">
-                  <span className="text-xs text-slate-600">{getTabTitle()}</span>
+                  <span className="text-xs text-slate-600">{getTitleText()}</span>
                 </Badge>
               </div>
             ),

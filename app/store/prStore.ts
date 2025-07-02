@@ -296,3 +296,138 @@ export function getPRTypeColor(type: string): string {
 
   return typeColors[type] || '#d9d9d9';
 }
+
+// 支持取消的PR数据获取
+export async function fetchPRDataWithCancel(
+  customFilters?: {
+    repos: string[];
+    startDate: string;
+    endDate: string;
+    signal?: AbortSignal;
+  },
+  retryCount = 0
+) {
+  const maxRetries = 3;
+  prStore.loading = true;
+  prStore.error = null;
+
+  try {
+    // 使用传入的筛选条件或store中的默认条件
+    const filters = customFilters || {
+      repos: prStore.filters.repos,
+      startDate: prStore.filters.startDate,
+      endDate: prStore.filters.endDate,
+    };
+
+    console.log('🔍 PR数据查询参数:', filters);
+
+    // 验证参数
+    if (!filters.repos || filters.repos.length === 0) {
+      throw new Error('请至少选择一个仓库');
+    }
+
+    if (!filters.startDate || !filters.endDate) {
+      throw new Error('请选择日期范围');
+    }
+
+    // 验证日期格式
+    const startDate = new Date(filters.startDate);
+    const endDate = new Date(filters.endDate);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new Error('日期格式无效');
+    }
+
+    if (startDate >= endDate) {
+      throw new Error('开始日期必须早于结束日期');
+    }
+
+    // 检查日期范围是否过大（超过1年）
+    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysDiff > 365) {
+      throw new Error('查询时间范围不能超过1年');
+    }
+
+    console.log(
+      `📅 查询时间范围: ${filters.startDate} 至 ${filters.endDate} (${Math.round(daysDiff)}天)`
+    );
+
+    const response = await fetch('/api/pull-requests', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        repos: filters.repos,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      }),
+      signal: filters.signal, // 传递AbortSignal
+    });
+
+    if (!response.ok) {
+      // 根据HTTP状态码提供更具体的错误信息
+      let errorMessage = `获取PR数据失败: ${response.status}`;
+      switch (response.status) {
+        case 429:
+          errorMessage = 'API请求过于频繁，请稍后再试';
+          break;
+        case 500:
+          errorMessage = '服务器内部错误，请稍后重试';
+          break;
+        case 502:
+        case 503:
+        case 504:
+          errorMessage = '服务暂时不可用，正在尝试重连...';
+          break;
+        default:
+          errorMessage = `${errorMessage} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = (await response.json()) as PRAnalysis;
+
+    // 验证返回的数据结构
+    if (!data || typeof data !== 'object') {
+      throw new Error('服务器返回了无效的数据格式');
+    }
+
+    prStore.data = data;
+    prStore.error = null; // 成功后清除错误
+
+    console.log(`✅ PR数据获取成功，共获取 ${data.rawData?.length || 0} 条PR数据`);
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.log('⏭️ PR数据请求被取消');
+      return; // 不设置错误状态
+    }
+
+    console.error('❌ 获取PR数据失败:', error);
+
+    let errorMessage = error.message || 'PR数据获取失败';
+
+    // 网络错误重试逻辑
+    if (
+      (error.message?.includes('fetch') ||
+        error.message?.includes('network') ||
+        error.message?.includes('timeout')) &&
+      retryCount < maxRetries
+    ) {
+      console.log(`🔄 网络错误，${3000 * (retryCount + 1)}ms后进行第${retryCount + 1}次重试...`);
+      await new Promise(resolve => setTimeout(resolve, 3000 * (retryCount + 1)));
+      return fetchPRDataWithCancel(customFilters, retryCount + 1);
+    }
+
+    // 特殊错误处理
+    if (error.message?.includes('rate limit')) {
+      errorMessage = 'GitHub API请求频率过高，请稍后再试';
+    } else if (error.message?.includes('Validation')) {
+      errorMessage = '请求参数验证失败，请检查输入';
+    }
+
+    prStore.error = errorMessage;
+  } finally {
+    prStore.loading = false;
+  }
+}
