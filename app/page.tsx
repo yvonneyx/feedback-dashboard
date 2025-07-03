@@ -4,6 +4,7 @@ import CommunityDashboard from '@/app/components/CommunityDashboard';
 import TechStackFilter from '@/app/components/TechStackFilter';
 import {
   ALL_PRODUCTS,
+  clearIssueDataCache,
   feedbackStore,
   fetchFeedbackData,
   fetchFeedbackDataWithCancel,
@@ -26,8 +27,8 @@ function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 添加首次加载标记
-  const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
+  // 使用useRef跟踪首次加载状态，避免依赖项问题
+  const hasInitialLoadedRef = useRef(false);
 
   // 请求控制器ref，用于取消请求
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -110,9 +111,18 @@ function HomeContent() {
 
   // 页面加载时同步URL参数到store，并检查是否需要自动查询
   useEffect(() => {
+    console.log('🔥 页面 useEffect 被触发，开始处理URL参数和首次加载逻辑');
+
     const startParam = searchParams.get('startDate');
     const endParam = searchParams.get('endDate');
     const reposParam = searchParams.get('repos'); // 支持多仓库参数
+
+    console.log('📋 URL参数解析:', {
+      startParam,
+      endParam,
+      reposParam,
+      searchParams: searchParams.toString(),
+    });
 
     let initialStartDate = dayjs().startOf('month');
     let initialEndDate = dayjs();
@@ -162,60 +172,41 @@ function HomeContent() {
       store中的筛选条件: feedbackStore.filters,
     });
 
-    // 简化的数据检查逻辑：只检查是否有基础数据，不检查筛选条件匹配
-    const hasFeedbackData = feedbackStore.data && feedbackStore.data.length > 0;
-    const hasIssueData =
-      feedbackStore.issueResponseTimes && feedbackStore.issueResponseTimes.length > 0;
-    const hasPRData = prStore.data && prStore.data.rawData && prStore.data.rawData.length > 0;
-
-    // 检查是否有任何加载状态
-    const isAnyLoading =
-      feedbackStore.loading || feedbackStore.issueAnalyticsLoading || prStore.loading;
-
-    console.log('📊 当前数据状态检查:', {
-      反馈数据: hasFeedbackData ? '✅ 有数据' : '❌ 无数据',
-      Issue数据: hasIssueData ? '✅ 有数据' : '❌ 无数据',
-      PR数据: hasPRData ? '✅ 有数据' : '❌ 无数据',
-      是否在加载: isAnyLoading ? '✅ 加载中' : '❌ 未加载',
+    // 首次加载逻辑：简化判断，确保首次访问时总是获取数据
+    console.log('📊 当前状态检查:', {
+      已经首次加载过: hasInitialLoadedRef.current,
       feedbackStore数据长度: feedbackStore.data?.length || 0,
       issueResponseTimes长度: feedbackStore.issueResponseTimes?.length || 0,
       PR数据长度: prStore.data?.rawData?.length || 0,
+      loading状态: {
+        feedback: feedbackStore.loading,
+        issue: feedbackStore.issueAnalyticsLoading,
+        pr: prStore.loading,
+      },
     });
 
-    // 首次加载：使用标记确保一定会进行首次加载
-    const needsInitialLoad = !hasInitialLoaded && !isAnyLoading;
+    // 首次加载：如果还没有首次加载过，就立即执行
+    const needsInitialLoad = !hasInitialLoadedRef.current;
 
     console.log('🎯 首次加载判断:', {
-      已经首次加载过: hasInitialLoaded,
-      不在加载中: !isAnyLoading,
+      已经首次加载过: hasInitialLoadedRef.current,
       最终判断_需要首次加载: needsInitialLoad,
-      当前数据状态: {
-        反馈数据长度: feedbackStore.data?.length || 0,
-        Issue数据长度: feedbackStore.issueResponseTimes?.length || 0,
-        PR数据长度: prStore.data?.rawData?.length || 0,
-      },
+      首次加载策略: '简化逻辑，首次访问必定获取数据',
     });
 
     if (needsInitialLoad) {
       console.log('🚀 执行首次加载数据...');
-      setHasInitialLoaded(true); // 标记已经开始首次加载
+      hasInitialLoadedRef.current = true; // 标记已经开始首次加载
 
-      // 使用较短的延迟，确保React状态更新完成
-      const timer = setTimeout(() => {
-        handleInitialDataLoad(initialStartDate, initialEndDate, initialRepos);
-      }, 100);
-
-      // 清理定时器
-      return () => clearTimeout(timer);
-    } else if (hasInitialLoaded) {
-      console.log('✅ 首次加载已完成，跳过重复加载');
+      // 立即执行首次加载，不使用延迟
+      handleInitialDataLoad(initialStartDate, initialEndDate, initialRepos);
     } else {
-      console.log('⏳ 正在加载中，等待加载完成');
+      console.log('✅ 首次加载已完成，跳过重复加载');
     }
 
     // 确保useEffect在所有情况下都有返回值
     return undefined;
-  }, [searchParams, hasInitialLoaded]);
+  }, [searchParams]);
 
   // 监听store数据变化，用于调试
   useEffect(() => {
@@ -229,15 +220,36 @@ function HomeContent() {
         pr: prStore.loading,
       },
     });
-  }, []); // 空依赖数组，因为这只是用于调试的日志记录
+  }, [
+    feedbackStore.data?.length,
+    feedbackStore.issueResponseTimes?.length,
+    prStore.data?.rawData?.length,
+    feedbackStore.loading,
+    feedbackStore.issueAnalyticsLoading,
+    prStore.loading,
+  ]); // 添加依赖项以监听数据变化
 
   // 初次加载数据的专用函数
   const handleInitialDataLoad = async (startDate: Dayjs, endDate: Dayjs, repos: string[]) => {
     try {
+      console.log('🎯🎯🎯 【重要】初次加载函数被调用！！！', {
+        选择的仓库: repos,
+        日期范围: [startDate.format('YYYY-MM-DD'), endDate.format('YYYY-MM-DD')],
+        当前时间: new Date().toISOString(),
+      });
+
       console.log('🎯 初次加载应用筛选条件:', {
         选择的仓库: repos,
         日期范围: [startDate.format('YYYY-MM-DD'), endDate.format('YYYY-MM-DD')],
       });
+
+      // 首次加载时清除所有缓存，确保获取最新数据
+      console.log('🧹 首次加载：清除所有缓存数据');
+      clearIssueDataCache();
+
+      // 清除其他数据缓存
+      feedbackStore.data = null;
+      prStore.data = null;
 
       // 创建初次加载的AbortController
       const controller = new AbortController();
@@ -641,6 +653,24 @@ function HomeContent() {
     }
   };
 
+  // 清除缓存并重新获取数据
+  const handleClearCacheAndRefresh = async () => {
+    try {
+      setError(null);
+
+      // 清除Issue数据缓存
+      clearIssueDataCache();
+
+      // 重新获取所有数据
+      await handleApplyFilterWithCancel();
+
+      console.log('✅ 缓存已清除，数据已重新获取');
+    } catch (error) {
+      console.error('❌ 清除缓存并刷新数据失败:', error);
+      setError('清除缓存失败，请重试');
+    }
+  };
+
   return (
     <>
       <div
@@ -746,6 +776,17 @@ function HomeContent() {
                   <div className="w-full">
                     <TechStackFilter value={selectedRepos} onChange={handleRepoChange} />
                   </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Button
+                    size="small"
+                    type="text"
+                    onClick={handleClearCacheAndRefresh}
+                    className="text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                    title="清除缓存并重新获取所有数据"
+                  >
+                    🧹 刷新缓存
+                  </Button>
                 </div>
               </div>
             </div>

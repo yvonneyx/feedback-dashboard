@@ -16,6 +16,10 @@ interface FeedbackState {
   productResponseTimes: {
     [key: string]: any[];
   };
+  // 添加数据缓存键，用于跟踪筛选条件变化
+  dataCacheKeys: {
+    [key: string]: string; // repo -> cacheKey (startDate-endDate)
+  };
   error: string | null;
   issueAnalyticsLoading: boolean;
 }
@@ -68,6 +72,7 @@ export const feedbackStore = proxy<FeedbackState>({
   githubIssues: null,
   issueResponseTimes: null,
   productResponseTimes: {},
+  dataCacheKeys: {},
   error: null,
   issueAnalyticsLoading: false,
 });
@@ -86,6 +91,14 @@ export function updateRepos(repos: string[]) {
 // 保留旧的单仓库接口以兼容现有代码
 export function updateRepo(repo: string) {
   feedbackStore.filters.repos = repo ? [repo] : [];
+}
+
+// 清除Issue数据缓存，强制重新获取所有数据
+export function clearIssueDataCache() {
+  feedbackStore.productResponseTimes = {};
+  feedbackStore.dataCacheKeys = {};
+  feedbackStore.issueResponseTimes = [];
+  console.log('🧹 已清除Issue数据缓存，下次查询将重新获取所有数据');
 }
 
 // 支持取消的反馈数据获取
@@ -141,13 +154,52 @@ export async function fetchIssueResponseTimesWithCancel(signal?: AbortSignal) {
       reposToFetch = selectedRepos;
     }
 
-    // 清空之前的数据
-    feedbackStore.productResponseTimes = {};
-    feedbackStore.issueResponseTimes = [];
+    // 生成当前筛选条件的缓存键
+    const currentCacheKey = `${feedbackStore.filters.startDate}-${feedbackStore.filters.endDate}`;
 
-    // 并发请求所有需要的仓库数据
-    const fetchPromises = reposToFetch.map(repo => fetchProductDataWithCancel(repo, signal));
-    await Promise.all(fetchPromises);
+    // 检查哪些仓库需要重新获取数据
+    const reposNeedingFetch = reposToFetch.filter(repo => {
+      // 如果该仓库没有数据，或者数据为空数组，或者筛选条件已变化，则需要获取
+      const hasNoData =
+        !feedbackStore.productResponseTimes[repo] ||
+        feedbackStore.productResponseTimes[repo].length === 0;
+      const cacheKeyChanged = feedbackStore.dataCacheKeys[repo] !== currentCacheKey;
+
+      return hasNoData || cacheKeyChanged;
+    });
+
+    console.log(`需要获取数据的仓库: ${reposNeedingFetch.length}/${reposToFetch.length}`, {
+      全部仓库: reposToFetch,
+      需要获取: reposNeedingFetch,
+      当前缓存键: currentCacheKey,
+      已有数据的仓库: reposToFetch.filter(
+        repo =>
+          feedbackStore.productResponseTimes[repo] &&
+          feedbackStore.productResponseTimes[repo].length > 0 &&
+          feedbackStore.dataCacheKeys[repo] === currentCacheKey
+      ),
+    });
+
+    // 如果有需要获取的仓库，则并发请求
+    if (reposNeedingFetch.length > 0) {
+      const fetchPromises = reposNeedingFetch.map(repo => fetchProductDataWithCancel(repo, signal));
+      await Promise.all(fetchPromises);
+
+      // 更新缓存键
+      reposNeedingFetch.forEach(repo => {
+        feedbackStore.dataCacheKeys[repo] = currentCacheKey;
+      });
+    }
+
+    // 清理不需要的仓库数据（如果用户取消选择了某些仓库）
+    const reposToKeep = new Set(reposToFetch);
+    Object.keys(feedbackStore.productResponseTimes).forEach(repo => {
+      if (!reposToKeep.has(repo)) {
+        delete feedbackStore.productResponseTimes[repo];
+        delete feedbackStore.dataCacheKeys[repo];
+        console.log(`清理未选中仓库的数据: ${repo}`);
+      }
+    });
 
     // 检查是否被取消
     if (signal?.aborted) {

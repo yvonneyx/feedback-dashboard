@@ -67,15 +67,8 @@ export default function TechStackFilter({ value, onChange }: TechStackFilterProp
         onChange([...selectedValues]); // 创建新数组避免引用问题
       }
     },
-    [onChange, internalValue]
+    [onChange]
   );
-
-  useEffect(() => {
-    console.log('🔄 TechStackFilter: 内部值变化，触发onChange', {
-      新值: internalValue,
-    });
-    onChange(internalValue);
-  }, [internalValue]);
 
   return (
     <Select
