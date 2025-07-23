@@ -43,6 +43,8 @@ export interface RepoMetrics {
   repoName: string;
   issueResolveRate: number;
   issue48hResponseRate: number;
+  avgResponseTimeInHours: number; // 新增字段，平均响应时长（小时）
+  responseRate: number; // 新增字段，响应率
   totalIssues: number;
   resolvedIssues: number;
   responded48hIssues: number;
@@ -298,6 +300,22 @@ export function calculateRepoIssueMetrics(): RepoMetrics[] {
       (issue: any) =>
         issue.hasResponse && issue.responseTimeInHours !== null && issue.responseTimeInHours <= 48
     ).length;
+    // 新增：计算平均响应时长（仅统计已响应的issue）
+    const respondedIssues = issues.filter((issue: any) => issue.responseTimeInHours !== null);
+    const avgResponseTimeInHours =
+      respondedIssues.length > 0
+        ? Math.round(
+            (respondedIssues.reduce(
+              (sum: number, issue: any) => sum + issue.responseTimeInHours,
+              0
+            ) /
+              respondedIssues.length) *
+              10
+          ) / 10
+        : 0;
+    // 新增：响应率
+    const responseRate =
+      totalIssues > 0 ? Math.round((respondedIssues.length / totalIssues) * 100) : 100;
 
     const issueResolveRate =
       totalIssues > 0 ? Math.round((resolvedIssues / totalIssues) * 100) : 100;
@@ -309,6 +327,8 @@ export function calculateRepoIssueMetrics(): RepoMetrics[] {
       repoName,
       issueResolveRate,
       issue48hResponseRate,
+      avgResponseTimeInHours, // 新增
+      responseRate, // 新增
       totalIssues,
       resolvedIssues,
       responded48hIssues,

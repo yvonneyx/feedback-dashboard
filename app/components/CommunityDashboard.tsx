@@ -59,6 +59,8 @@ const ExecutiveMetricCard = ({
   repoTableData = [],
   repoTableType = 'issue',
   filters,
+  showGap = true,
+  showProgress = true,
 }: {
   title: string;
   value: number;
@@ -71,6 +73,8 @@ const ExecutiveMetricCard = ({
   repoTableData?: any[];
   repoTableType?: 'issue' | 'doc' | 'issue48h';
   filters?: { repos: readonly string[] };
+  showGap?: boolean;
+  showProgress?: boolean;
 }) => {
   // 添加调试日志
   console.log(`🎯 ExecutiveMetricCard [${title}]:`, {
@@ -142,18 +146,25 @@ const ExecutiveMetricCard = ({
       return [
         ...baseColumns,
         {
-          title: '48h响应率',
-          dataIndex: 'issue48hResponseRate' as keyof any,
-          key: 'issue48hResponseRate',
-          width: 100,
-          render: (rate: number, record: any) => (
+          title: '平均响应时长（小时）',
+          key: 'avgResponseTimeInHours',
+          width: 160,
+          render: (_: any, record: any) => (
             <span
               className={`font-semibold ${
-                record.isIssue48hResponseGood ? 'text-green-600' : 'text-red-600'
+                record.avgResponseTimeInHours <= target ? 'text-green-600' : 'text-red-600'
               }`}
             >
-              {rate}%
+              {record.avgResponseTimeInHours.toFixed(1)}
             </span>
+          ),
+        },
+        {
+          title: '响应率',
+          key: 'responseRate',
+          width: 100,
+          render: (rate: number, record: any) => (
+            <span className="text-sm text-gray-600">{record.responseRate}%</span>
           ),
         },
         {
@@ -173,7 +184,7 @@ const ExecutiveMetricCard = ({
           render: (_: any, record: any) => (
             <span
               className={`inline-block w-3 h-3 rounded-full ${
-                record.isIssue48hResponseGood ? 'bg-green-500' : 'bg-red-500'
+                record.avgResponseTimeInHours <= target ? 'bg-green-500' : 'bg-red-500'
               }`}
             />
           ),
@@ -295,31 +306,34 @@ const ExecutiveMetricCard = ({
         </div>
 
         {/* 差距提示 */}
-        <div className="mt-0.5">
-          {value >= target ? (
-            <span className="text-xs text-green-600 font-medium">
-              超出 {(value - target).toFixed(1)}
-              {unit}
-            </span>
-          ) : (
-            <span className="text-xs text-red-600 font-medium">
-              还差 {(target - value).toFixed(1)}
-              {unit}
-            </span>
-          )}
-        </div>
+        {showGap && (
+          <div className="mt-0.5">
+            {value >= target ? (
+              <span className="text-xs text-green-600 font-medium">
+                超出 {(value - target).toFixed(1)}
+                {unit}
+              </span>
+            ) : (
+              <span className="text-xs text-red-600 font-medium">
+                还差 {(target - value).toFixed(1)}
+                {unit}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 进度条 */}
-      <div className="space-y-1">
-        <div className="flex justify-between text-xs text-gray-600">
-          <span>进度</span>
-          <span>{percentage.toFixed(1)}%</span>
-        </div>
+      {showProgress ? (
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs text-gray-600">
+            <span>进度</span>
+            <span>{percentage.toFixed(1)}%</span>
+          </div>
 
-        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-          <div
-            className={`
+          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div
+              className={`
               h-full rounded-full transition-all duration-500 ease-out
               ${
                 isGood
@@ -327,10 +341,13 @@ const ExecutiveMetricCard = ({
                   : 'bg-gradient-to-r from-red-400 to-red-500'
               }
             `}
-            style={{ width: `${Math.min(percentage, 100)}%` }}
-          />
+              style={{ width: `${Math.min(percentage, 100)}%` }}
+            />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div style={{ height: '36px' }}></div>
+      )}
 
       {/* 仓库指标表格 */}
       {showRepoTable && repoTableData.length > 0 && (
@@ -538,15 +555,30 @@ export default function CommunityDashboard() {
     // Issue 解决率
     const issueResolveRate = metrics.issues.resolveRate;
 
-    // Issue 48h 响应率
-    const issue48hResponseRate = metrics.issues.response48hRate;
+    // 平均响应时长（小时）和响应率
+    const allIssues = feedbackData.issueResponseTimes || [];
+    const respondedIssues = allIssues.filter((issue: any) => issue.responseTimeInHours !== null);
+    const avgResponseTimeInHours =
+      respondedIssues.length > 0
+        ? Math.round(
+            (respondedIssues.reduce(
+              (sum: number, issue: any) => sum + issue.responseTimeInHours,
+              0
+            ) /
+              respondedIssues.length) *
+              10
+          ) / 10
+        : 0;
+    const responseRate =
+      allIssues.length > 0 ? Math.round((respondedIssues.length / allIssues.length) * 100) : 100;
 
     // 文档解决率
     const docResolveRate = metrics.discussions.answerRate;
 
     console.log('📈 计算管理层指标:', {
       issueResolveRate,
-      issue48hResponseRate,
+      avgResponseTimeInHours,
+      responseRate,
       docResolveRate,
       来源数据: {
         totalIssues: metrics.issues.total,
@@ -560,7 +592,8 @@ export default function CommunityDashboard() {
 
     return {
       issueResolveRate,
-      issue48hResponseRate,
+      avgResponseTimeInHours,
+      responseRate,
       docResolveRate,
     };
   }, [
@@ -603,12 +636,15 @@ export default function CommunityDashboard() {
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={8}>
           <ExecutiveMetricCard
+            showGap={false}
+            showProgress={false}
             key={`issue48h-${feedbackData.issueResponseTimes?.length || 0}-${feedbackData.filters.repos.join(',')}`}
-            title="Issue 48h 响应率"
-            value={executiveMetrics.issue48hResponseRate}
-            target={95}
+            title={`issue 平均响应时长`}
+            value={executiveMetrics.avgResponseTimeInHours}
+            target={48}
+            unit="h"
             icon={<ClockCircleOutlined />}
-            isGood={executiveMetrics.issue48hResponseRate >= 95}
+            isGood={executiveMetrics.avgResponseTimeInHours <= 48}
             loading={feedbackData.issueAnalyticsLoading}
             showRepoTable={shouldShowRepoTable}
             repoTableData={repoIssueMetrics}

@@ -106,6 +106,12 @@ export default function KeyMetrics() {
       responded: liveStats.respondedIssues,
       total: liveStats.totalIssues,
     },
+    responseAvgTime: {
+      current: liveStats.avgResponseTime,
+      responseRate: liveStats.responseRate,
+      responded: liveStats.respondedIssues,
+      total: liveStats.totalIssues,
+    },
     responseRateUnder48h: {
       current: liveStats.responseRateUnder48h,
       baseline: 95,
@@ -266,7 +272,7 @@ export default function KeyMetrics() {
           </div>
         </div>
 
-        {/* 48小时响应率卡片 */}
+        {/* 平均响应时长卡片（替换原48小时响应率卡片） */}
         <div
           className="rounded-lg border border-gray-100 bg-white p-4"
           style={{ opacity: issueAnalyticsLoading ? 0.6 : 1 }}
@@ -275,54 +281,36 @@ export default function KeyMetrics() {
             title={
               <div className="flex items-center">
                 <Badge color="#0891b2" />
-                <Text className="text-gray-600 font-medium text-sm ml-1.5">48小时响应率</Text>
+                <Text className="text-gray-600 font-medium text-sm ml-1.5">
+                  平均响应时长（小时）
+                </Text>
                 <div className="ml-1.5">
                   <Tag bordered={false} color="cyan" style={{ fontSize: '10px' }}>
-                    目标值 95%
+                    响应率
                   </Tag>
                 </div>
               </div>
             }
-            value={stats.responseRateUnder48h.current}
+            value={stats.responseAvgTime.current}
             precision={1}
             valueStyle={{ color: '#0891b2', fontWeight: '600', fontSize: '1.75rem' }}
             suffix={
-              <div className="inline-flex items-center">
-                <span className="text-gray-400 text-base">%</span>
-                {stats.responseRateUnder48h.isGood ? (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-cyan-50 text-cyan-600 rounded ml-2 flex items-center">
-                    <RiseOutlined className="mr-0.5" />
-                    {stats.responseRateUnder48h.trend}
-                  </span>
-                ) : (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded ml-2 flex items-center">
-                    <FallOutlined className="mr-0.5" />
-                    {stats.responseRateUnder48h.trend}
-                  </span>
-                )}
-              </div>
+              <span className="text-gray-400 text-base">
+                （{stats.responseAvgTime.responseRate}%）
+              </span>
             }
           />
-
           <div className="mt-2 text-[10px] text-gray-400">
-            48小时内响应:{' '}
-            <span className="font-medium text-cyan-700">
-              {stats.responseRateUnder48h.responded}
-            </span>{' '}
-            / 总计:{' '}
-            <span className="font-medium text-gray-600">{stats.responseRateUnder48h.total}</span>
+            已响应:{' '}
+            <span className="font-medium text-cyan-700">{stats.responseAvgTime.responded}</span> /
+            总计: <span className="font-medium text-gray-600">{stats.responseAvgTime.total}</span>
           </div>
-
           {/* 进度条 */}
           <div className="mt-3 bg-gray-100 h-1 rounded-full overflow-hidden">
             <div
               className="h-full bg-cyan-500 progress-bar-animation"
               style={{
-                width: `${
-                  stats.responseRateUnder48h.current > 100
-                    ? 100
-                    : stats.responseRateUnder48h.current
-                }%`,
+                width: `${stats.responseAvgTime.responseRate > 100 ? 100 : stats.responseAvgTime.responseRate}%`,
               }}
             ></div>
           </div>
