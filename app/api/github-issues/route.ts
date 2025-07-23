@@ -228,47 +228,53 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
           (a: any, b: any) => new Date(a?.created_at).getTime() - new Date(b?.created_at).getTime()
         )[0];
 
-      // 确定哪个事件先发生 - 评论或标签添加
-      if (firstMaintainerComment || firstLabelEvent) {
+      // 检查timeline中的首次PR关联事件
+      const firstPrReferenceEvent = timelineResponse.data
+        .filter((event: any) => {
+          // cross-referenced 且来源是 PR
+          if (event.event !== 'cross-referenced') return false;
+          if (!event.source || !event.source.issue) return false;
+          if (!event.source.issue.pull_request) return false;
+          // 排除自己引用自己
+          if (event.source.issue.number === issueNumber) return false;
+          // 排除机器人
+          if (event.actor && event.actor.type === 'Bot') return false;
+          return true;
+        })
+        .sort(
+          (a: any, b: any) =>
+            new Date(a?.created_at || 0).getTime() - new Date(b?.created_at || 0).getTime()
+        )[0];
+
+      // 确定哪个事件先发生 - 评论、标签、PR 关联
+      const responseSources: { type: string; time: Date }[] = [];
+      if (firstMaintainerComment)
+        responseSources.push({ type: '评论', time: new Date(firstMaintainerComment.created_at) });
+      if (firstLabelEvent)
+        // @ts-expect-error type error
+        responseSources.push({ type: '标签', time: new Date(firstLabelEvent.created_at) });
+      // @ts-expect-error type error
+      if (firstPrReferenceEvent && firstPrReferenceEvent.created_at)
+        // @ts-expect-error type error
+        responseSources.push({ type: 'PR关联', time: new Date(firstPrReferenceEvent.created_at) });
+
+      if (responseSources.length > 0) {
         hasResponse = true;
-
-        const commentTime = firstMaintainerComment
-          ? new Date(firstMaintainerComment.created_at)
-          : null;
-        const labelTime = firstLabelEvent ? new Date((firstLabelEvent as any).created_at) : null;
-
-        // 比较哪个响应先发生
-        if (commentTime && labelTime) {
-          firstResponseTime = commentTime < labelTime ? commentTime : labelTime;
-          const responseType = commentTime < labelTime ? '评论' : '标签';
-          console.log(
-            `✅ Issue #${issueNumber}: 首次响应为${responseType}，响应时间=${Math.round(((firstResponseTime.getTime() - issueCreatedAt.getTime()) / (1000 * 60 * 60)) * 10) / 10}小时`
-          );
-        } else if (commentTime) {
-          firstResponseTime = commentTime;
-          console.log(
-            `✅ Issue #${issueNumber}: 首次响应为评论，响应时间=${Math.round(((firstResponseTime.getTime() - issueCreatedAt.getTime()) / (1000 * 60 * 60)) * 10) / 10}小时`
-          );
-        } else if (labelTime) {
-          firstResponseTime = labelTime;
-          const labelName = (firstLabelEvent as any)?.label?.name || '未知标签';
-          console.log(
-            `✅ Issue #${issueNumber}: 首次响应为标签"${labelName}"，响应时间=${Math.round(((firstResponseTime.getTime() - issueCreatedAt.getTime()) / (1000 * 60 * 60)) * 10) / 10}小时`
-          );
-        }
-
+        // 找到最早的响应事件
+        responseSources.sort((a, b) => a.time.getTime() - b.time.getTime());
+        firstResponseTime = responseSources[0].time;
+        const responseType = responseSources[0].type;
+        console.log(
+          `✅ Issue #${issueNumber}: 首次响应为${responseType}，响应时间=${Math.round(((firstResponseTime.getTime() - issueCreatedAt.getTime()) / (1000 * 60 * 60)) * 10) / 10}小时`
+        );
         // 计算响应时间（小时）
-        if (firstResponseTime) {
-          const timeDiff = firstResponseTime.getTime() - issueCreatedAt.getTime();
-          responseTimeInHours = Math.round((timeDiff / (1000 * 60 * 60)) * 10) / 10; // 保留一位小数
-
-          // 确保响应时间不为负数
-          if (responseTimeInHours < 0) {
-            console.warn(
-              `⚠️ Issue #${issueNumber} 响应时间为负数: ${responseTimeInHours}小时，设置为0`
-            );
-            responseTimeInHours = 0;
-          }
+        const timeDiff = firstResponseTime.getTime() - issueCreatedAt.getTime();
+        responseTimeInHours = Math.round((timeDiff / (1000 * 60 * 60)) * 10) / 10; // 保留一位小数
+        if (responseTimeInHours < 0) {
+          console.warn(
+            `⚠️ Issue #${issueNumber} 响应时间为负数: ${responseTimeInHours}小时，设置为0`
+          );
+          responseTimeInHours = 0;
         }
       }
 

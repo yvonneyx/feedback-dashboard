@@ -67,7 +67,7 @@ export default function TechStackFilter({ value, onChange }: TechStackFilterProp
         onChange([...selectedValues]); // 创建新数组避免引用问题
       }
     },
-    [onChange]
+    [onChange, internalValue]
   );
 
   return (

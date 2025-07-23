@@ -163,7 +163,7 @@ const ExecutiveMetricCard = ({
           title: '响应率',
           key: 'responseRate',
           width: 100,
-          render: (rate: number, record: any) => (
+          render: (_: number, record: any) => (
             <span className="text-sm text-gray-600">{record.responseRate}%</span>
           ),
         },
@@ -378,7 +378,9 @@ const ExecutiveMetricCard = ({
                   {getTableColumns().map((col, colIndex) => {
                     let cellContent: React.ReactNode = '';
 
+                    // @ts-expect-error type error
                     if (col.dataIndex) {
+                      // @ts-expect-error type error
                       const value = record[col.dataIndex as string];
                       cellContent = col.render ? (col.render as any)(value, record) : value;
                     } else if (col.render) {
@@ -604,6 +606,7 @@ export default function CommunityDashboard() {
     metrics.issues.resolved,
     metrics.discussions.total,
     metrics.discussions.answered,
+    feedbackData.issueResponseTimes,
     feedbackData.issueResponseTimes?.length,
     feedbackData.data?.length,
   ]);
