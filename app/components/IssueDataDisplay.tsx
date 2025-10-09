@@ -153,22 +153,36 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
         dataIndex: 'responseTimeInHours',
         key: 'responseTimeInHours',
         render: (hours: number | null, record: any) => {
-          if (hours === null) return <Text type="secondary">-</Text>;
+          if (hours === null || hours === undefined) return <Text type="secondary">-</Text>;
 
-          const colorClass =
-            hours <= 24 ? 'text-green-600' : hours <= 48 ? 'text-blue-600' : 'text-amber-600';
+          // 根据是否有响应来区分颜色显示
+          let colorClass = '';
+          if (record.hasResponse) {
+            // 已响应的issue：绿色(24h内)、蓝色(48h内)、橙色(超过48h)
+            colorClass =
+              hours <= 24 ? 'text-green-600' : hours <= 48 ? 'text-blue-600' : 'text-amber-600';
+          } else {
+            // 未响应的issue：显示为红色，表示等待时间
+            colorClass = 'text-red-600';
+          }
 
           return (
             <Text className={colorClass} strong>
               {hours}
-              {record.meetsSLA && <CheckCircleOutlined className="ml-2 text-green-500" />}
+              {record.hasResponse && record.meetsSLA && (
+                <CheckCircleOutlined className="ml-2 text-green-500" />
+              )}
+              {!record.hasResponse && <span className="ml-1 text-xs">(未响应)</span>}
+              {record.hasResponse && record.state === 'closed' && !record.meetsSLA && (
+                <span className="ml-1 text-xs text-gray-500">(已关闭)</span>
+              )}
             </Text>
           );
         },
         sorter: (a: any, b: any) => {
           if (a.responseTimeInHours === null && b.responseTimeInHours === null) return 0;
-          if (a.responseTimeInHours === null) return 1;
-          if (b.responseTimeInHours === null) return -1;
+          if (a.responseTimeInHours === null || a.responseTimeInHours === undefined) return 1;
+          if (b.responseTimeInHours === null || b.responseTimeInHours === undefined) return -1;
           return a.responseTimeInHours - b.responseTimeInHours;
         },
         width: 150,

@@ -165,6 +165,36 @@ async function fetchWithRetry<T>(
   throw new Error('所有重试失败');
 }
 
+// 检查用户是否是AntV成员的函数，添加缓存以减少API调用
+const membershipCache = new Map<string, boolean>();
+
+async function isAntVMember(username: string): Promise<boolean> {
+  // 检查缓存
+  if (membershipCache.has(username)) {
+    return membershipCache.get(username)!;
+  }
+
+  try {
+    // 检查用户是否是antvis组织的成员
+    await octokit.orgs.checkMembershipForUser({
+      org: 'antvis',
+      username: username,
+    });
+    membershipCache.set(username, true);
+    return true; // 如果没有抛出异常，说明是成员
+  } catch (error: any) {
+    // 如果返回404，用户不是成员或成员身份不公开
+    if (error.status === 404) {
+      membershipCache.set(username, false);
+      return false;
+    }
+    // 其他错误，保守起见认为不是成员
+    console.warn(`检查用户 ${username} 的AntV成员身份时出错:`, error.message);
+    membershipCache.set(username, false);
+    return false;
+  }
+}
+
 // 分析issues的首次响应时间 - 调整处理Search API返回的数据
 async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: string) {
   const analyzedIssues = [];
@@ -200,33 +230,75 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
       const issueCreatedAt = new Date(issue.created_at);
       const issueCreator = issue.user.login;
 
-      // 检查评论中的首次维护者回复
-      const firstMaintainerComment = commentsResponse.data
+      // 检查评论中的首次AntV成员回复
+      let firstMaintainerComment = null;
+      
+      // 筛选非机器人和非issue创建者的评论
+      const candidateComments = commentsResponse.data
         .filter(
           (comment: any) => comment.user?.login !== issueCreator && comment.user?.type !== 'Bot'
         )
         .sort(
           (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        )[0];
+        );
 
-      // 检查timeline中的首次标签添加事件 - 优化逻辑，让任何维护者添加的标签都算作响应
-      const firstLabelEvent = timelineResponse.data
+      // 检查每个评论者是否是AntV成员
+      for (const comment of candidateComments) {
+        if (comment.user?.login) {
+          const isAntVMemberResult = await isAntVMember(comment.user.login);
+          if (isAntVMemberResult) {
+            firstMaintainerComment = comment;
+            console.log(`✅ 发现AntV成员 ${comment.user.login} 的回复作为首次响应`);
+            break; // 找到第一个AntV成员的回复就停止
+          }
+        }
+      }
+
+      // 如果没有找到AntV成员的回复，使用第一个非创建者、非机器人的回复作为备用
+      if (!firstMaintainerComment && candidateComments.length > 0) {
+        firstMaintainerComment = candidateComments[0];
+        console.log(`⚠️ 未找到AntV成员回复，使用第一个维护者回复: ${firstMaintainerComment.user?.login}`);
+      }
+
+      // 检查timeline中的首次AntV成员标签添加事件
+      let firstLabelEvent = null;
+      
+      // 筛选标签添加事件
+      const candidateLabelEvents = timelineResponse.data
         .filter((event: any) => {
           // 过滤标签添加事件
           if (event.event !== 'labeled') return false;
-
           // 排除issue创建者自己添加的标签
           if (event.actor && event.actor.login === issueCreator) return false;
-
           // 排除机器人添加的标签
           if (event.actor && event.actor.type === 'Bot') return false;
-
-          // 包含所有其他人（维护者）添加的标签
           return true;
         })
         .sort(
           (a: any, b: any) => new Date(a?.created_at).getTime() - new Date(b?.created_at).getTime()
-        )[0];
+        );
+
+      // 检查每个标签事件的操作者是否是AntV成员
+      for (const event of candidateLabelEvents) {
+        // @ts-expect-error type error
+        if (event.actor?.login) {
+          // @ts-expect-error type error
+          const isAntVMemberResult = await isAntVMember(event.actor.login);
+          if (isAntVMemberResult) {
+            firstLabelEvent = event;
+            // @ts-expect-error type error
+            console.log(`✅ 发现AntV成员 ${event.actor.login} 添加标签作为首次响应`);
+            break; // 找到第一个AntV成员的标签操作就停止
+          }
+        }
+      }
+
+      // 如果没有找到AntV成员的标签操作，使用第一个符合条件的标签事件作为备用
+      if (!firstLabelEvent && candidateLabelEvents.length > 0) {
+        firstLabelEvent = candidateLabelEvents[0];
+        // @ts-expect-error type error
+        console.log(`⚠️ 未找到AntV成员标签操作，使用第一个维护者标签: ${firstLabelEvent.actor?.login}`);
+      }
 
       // 检查timeline中的首次PR关联事件
       const firstPrReferenceEvent = timelineResponse.data
@@ -258,27 +330,43 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
         // @ts-expect-error type error
         responseSources.push({ type: 'PR关联', time: new Date(firstPrReferenceEvent.created_at) });
 
+      // 统一的响应时间计算逻辑
       if (responseSources.length > 0) {
+        // 情况1: 有实际响应（label或非bot回复）
         hasResponse = true;
-        // 找到最早的响应事件
         responseSources.sort((a, b) => a.time.getTime() - b.time.getTime());
         firstResponseTime = responseSources[0].time;
         const responseType = responseSources[0].type;
-        console.log(
-          `✅ Issue #${issueNumber}: 首次响应为${responseType}，响应时间=${Math.round(((firstResponseTime.getTime() - issueCreatedAt.getTime()) / (1000 * 60 * 60)) * 10) / 10}小时`
-        );
-        // 计算响应时间（小时）
+        console.log(`✅ Issue #${issueNumber}: 首次响应为${responseType}`);
         const timeDiff = firstResponseTime.getTime() - issueCreatedAt.getTime();
-        responseTimeInHours = Math.round((timeDiff / (1000 * 60 * 60)) * 10) / 10; // 保留一位小数
-        if (responseTimeInHours < 0) {
-          console.warn(
-            `⚠️ Issue #${issueNumber} 响应时间为负数: ${responseTimeInHours}小时，设置为0`
-          );
-          responseTimeInHours = 0;
-        }
+        responseTimeInHours = Math.round((timeDiff / (1000 * 60 * 60)) * 10) / 10;
+      } else if (issue.state === 'closed' && issue.closed_at) {
+        // 情况2: 没有实际响应但被关闭，视为响应了
+        hasResponse = true;
+        firstResponseTime = new Date(issue.closed_at);
+        const timeDiff = firstResponseTime.getTime() - issueCreatedAt.getTime();
+        responseTimeInHours = Math.round((timeDiff / (1000 * 60 * 60)) * 10) / 10;
+        console.log(`✅ Issue #${issueNumber}: 无实际响应但已关闭，使用关闭时间作为响应时间`);
+      } else {
+        // 情况3: 一直open且没响应，统计到当前时间
+        hasResponse = false;
+        const currentTime = new Date();
+        const timeDiff = currentTime.getTime() - issueCreatedAt.getTime();
+        responseTimeInHours = Math.round((timeDiff / (1000 * 60 * 60)) * 10) / 10;
+        console.log(
+          `⚠️ Issue #${issueNumber}: open状态且未响应，统计到当前时间: ${responseTimeInHours}小时`
+        );
       }
 
-      // 修正meetsSLA判断，确保正确计算48小时响应率
+      // 确保响应时间不为负数
+      if (responseTimeInHours !== null && responseTimeInHours < 0) {
+        console.warn(
+          `⚠️ Issue #${issueNumber} 响应时间为负数: ${responseTimeInHours}小时，设置为0`
+        );
+        responseTimeInHours = 0;
+      }
+
+      // 计算是否符合48小时SLA
       const meetsSLA = hasResponse && responseTimeInHours !== null && responseTimeInHours <= 48;
 
       if (meetsSLA) {
@@ -289,6 +377,7 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
         number: issueNumber,
         title: issue.title,
         created_at: issue.created_at,
+        closed_at: issue.closed_at, // 添加关闭时间信息
         state: issue.state,
         html_url: issue.html_url,
         hasResponse,
@@ -297,16 +386,36 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
       });
     } catch (error) {
       console.error(`分析issue #${issueNumber}响应时间出错:`, error);
-      // 即使出错也添加到结果中，但标记为未响应
+      // 即使出错也添加到结果中，使用统一的响应时间计算逻辑
+      const issueCreatedAt = new Date(issue.created_at);
+      let hasResponseError = false;
+      let timeToQuery = 0;
+
+      // 统一的响应时间计算逻辑（与正常流程一致）
+      if (issue.state === 'closed' && issue.closed_at) {
+        // 被关闭的issue视为已响应，使用关闭时间
+        hasResponseError = true;
+        const endTime = new Date(issue.closed_at);
+        const timeDiff = endTime.getTime() - issueCreatedAt.getTime();
+        timeToQuery = Math.round((timeDiff / (1000 * 60 * 60)) * 10) / 10;
+      } else {
+        // open状态的issue，出错时标记为未响应，使用当前时间计算
+        hasResponseError = false;
+        const currentTime = new Date();
+        const timeDiff = currentTime.getTime() - issueCreatedAt.getTime();
+        timeToQuery = Math.round((timeDiff / (1000 * 60 * 60)) * 10) / 10;
+      }
+
       analyzedIssues.push({
         number: issueNumber,
         title: issue.title,
         created_at: issue.created_at,
+        closed_at: issue.closed_at, // 添加关闭时间信息
         state: issue.state,
         html_url: issue.html_url,
-        hasResponse: false,
-        responseTimeInHours: null,
-        meetsSLA: false,
+        hasResponse: hasResponseError,
+        responseTimeInHours: timeToQuery,
+        meetsSLA: hasResponseError && timeToQuery <= 48,
         error: '分析此issue时发生错误',
       });
     }

@@ -13,8 +13,9 @@ import {
   FileTextOutlined,
   IssuesCloseOutlined,
   PullRequestOutlined,
+  QuestionCircleOutlined,
 } from '@ant-design/icons';
-import { Col, Divider, Row, Tabs } from 'antd';
+import { Col, Divider, Row, Tabs, Tooltip } from 'antd';
 import { useEffect, useMemo } from 'react';
 import { useSnapshot } from 'valtio';
 import DocDetails from './DocDetails';
@@ -61,6 +62,7 @@ const ExecutiveMetricCard = ({
   filters,
   showGap = true,
   showProgress = true,
+  ruleDescription,
 }: {
   title: string;
   value: number;
@@ -75,6 +77,7 @@ const ExecutiveMetricCard = ({
   filters?: { repos: readonly string[] };
   showGap?: boolean;
   showProgress?: boolean;
+  ruleDescription?: string;
 }) => {
   // 添加调试日志
   console.log(`🎯 ExecutiveMetricCard [${title}]:`, {
@@ -113,7 +116,7 @@ const ExecutiveMetricCard = ({
                 record.isIssueResolveGood ? 'text-green-600' : 'text-red-600'
               }`}
             >
-              {rate}%
+              {record.totalIssues ? `${rate}%` : '-'}
             </span>
           ),
         },
@@ -155,7 +158,7 @@ const ExecutiveMetricCard = ({
                 record.avgResponseTimeInHours <= target ? 'text-green-600' : 'text-red-600'
               }`}
             >
-              {record.avgResponseTimeInHours.toFixed(1)}
+              {record.totalIssues ? `${record.avgResponseTimeInHours.toFixed(1)}h` : '-'}
             </span>
           ),
         },
@@ -164,16 +167,20 @@ const ExecutiveMetricCard = ({
           key: 'responseRate',
           width: 100,
           render: (_: number, record: any) => (
-            <span className="text-sm text-gray-600">{record.responseRate}%</span>
+            <span className="text-sm text-gray-600">
+              {record.totalIssues ? `${record.responseRate}%` : '-'}
+            </span>
           ),
         },
         {
-          title: '48h响应/总数',
+          title: '48h响应率',
           key: 'responded',
           width: 120,
           render: (_: any, record: any) => (
             <span className="text-sm text-gray-600">
-              {record.responded48hIssues}/{record.totalIssues}
+              {record.totalIssues
+                ? `${((record.responded48hIssues / record.totalIssues) * 100).toFixed(0)}%`
+                : '-'}
             </span>
           ),
         },
@@ -206,7 +213,7 @@ const ExecutiveMetricCard = ({
                 record.isDocResolveGood ? 'text-green-600' : 'text-red-600'
               }`}
             >
-              {rate}%
+              {record.totalDocs ? `${rate}%` : '-'}
             </span>
           ),
         },
@@ -272,7 +279,14 @@ const ExecutiveMetricCard = ({
             <div className="text-sm">{icon}</div>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-800 text-sm mb-0">{title}</h3>
+            <div className="flex items-center">
+              <h3 className="font-semibold text-gray-800 text-sm mb-0">{title}</h3>
+              {ruleDescription && (
+                <Tooltip title={ruleDescription} placement="top">
+                  <QuestionCircleOutlined className="ml-1 text-gray-400 text-xs hover:text-gray-600 cursor-help" />
+                </Tooltip>
+              )}
+            </div>
             <p className="text-xs text-gray-500">
               目标 {target}
               {unit}
@@ -559,15 +573,20 @@ export default function CommunityDashboard() {
 
     // 平均响应时长（小时）和响应率
     const allIssues = feedbackData.issueResponseTimes || [];
-    const respondedIssues = allIssues.filter((issue: any) => issue.responseTimeInHours !== null);
+    // 只统计已响应的issue
+    const respondedIssues = allIssues.filter((issue: any) => issue.hasResponse);
+    // 计算所有issue（包括未响应）的平均等待/响应时间
+    const allIssuesWithTime = allIssues.filter(
+      (issue: any) => issue.responseTimeInHours !== null && issue.responseTimeInHours !== undefined
+    );
     const avgResponseTimeInHours =
-      respondedIssues.length > 0
+      allIssuesWithTime.length > 0
         ? Math.round(
-            (respondedIssues.reduce(
+            (allIssuesWithTime.reduce(
               (sum: number, issue: any) => sum + issue.responseTimeInHours,
               0
             ) /
-              respondedIssues.length) *
+              allIssuesWithTime.length) *
               10
           ) / 10
         : 0;
@@ -653,6 +672,11 @@ export default function CommunityDashboard() {
             repoTableData={repoIssueMetrics}
             repoTableType="issue48h"
             filters={feedbackData.filters}
+            ruleDescription="计算规则：
+1. 有label或非bot回复：使用实际响应时间
+2. 无回复但已关闭：使用关闭时间作为响应时间
+3. 仍开放且未响应：使用当前时间计算等待时间
+统计所有issue的平均时长"
           />
         </Col>
 

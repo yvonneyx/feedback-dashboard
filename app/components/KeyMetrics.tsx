@@ -34,20 +34,20 @@ export default function KeyMetrics() {
     const closureRate = Math.round((closed / total) * 100);
 
     // 已响应 Issue 数量
-    const respondedIssues = issueResponseTimes.filter(
-      issue => issue.responseTimeInHours !== null
-    ).length;
+    const respondedIssues = issueResponseTimes.filter(issue => issue.hasResponse).length;
     const responseRate = Math.round((respondedIssues / total) * 100);
 
-    // 有效响应时间统计
-    const validResponseTimes = issueResponseTimes
-      .filter(issue => issue.responseTimeInHours !== null)
+    // 所有响应时间统计（包括未响应的等待时间）
+    const allResponseTimes = issueResponseTimes
+      .filter(
+        issue => issue.responseTimeInHours !== null && issue.responseTimeInHours !== undefined
+      )
       .map(issue => issue.responseTimeInHours);
 
     const avgTime =
-      validResponseTimes.length > 0
+      allResponseTimes.length > 0
         ? Math.round(
-            validResponseTimes.reduce((sum, time) => sum + time, 0) / validResponseTimes.length
+            allResponseTimes.reduce((sum, time) => sum + time, 0) / allResponseTimes.length
           )
         : 0;
 

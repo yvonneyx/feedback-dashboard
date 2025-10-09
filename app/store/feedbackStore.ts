@@ -300,20 +300,23 @@ export function calculateRepoIssueMetrics(): RepoMetrics[] {
       (issue: any) =>
         issue.hasResponse && issue.responseTimeInHours !== null && issue.responseTimeInHours <= 48
     ).length;
-    // 新增：计算平均响应时长（仅统计已响应的issue）
-    const respondedIssues = issues.filter((issue: any) => issue.responseTimeInHours !== null);
+    // 新增：计算平均响应时长（包括未响应issue的等待时间）
+    const allIssuesWithTime = issues.filter(
+      (issue: any) => issue.responseTimeInHours !== null && issue.responseTimeInHours !== undefined
+    );
     const avgResponseTimeInHours =
-      respondedIssues.length > 0
+      allIssuesWithTime.length > 0
         ? Math.round(
-            (respondedIssues.reduce(
+            (allIssuesWithTime.reduce(
               (sum: number, issue: any) => sum + issue.responseTimeInHours,
               0
             ) /
-              respondedIssues.length) *
+              allIssuesWithTime.length) *
               10
           ) / 10
         : 0;
-    // 新增：响应率
+    // 新增：响应率（只统计已实际响应的issue）
+    const respondedIssues = issues.filter((issue: any) => issue.hasResponse);
     const responseRate =
       totalIssues > 0 ? Math.round((respondedIssues.length / totalIssues) * 100) : 100;
 
