@@ -232,7 +232,7 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
 
       // 检查评论中的首次AntV成员回复
       let firstMaintainerComment = null;
-      
+
       // 筛选非机器人和非issue创建者的评论
       const candidateComments = commentsResponse.data
         .filter(
@@ -248,7 +248,6 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
           const isAntVMemberResult = await isAntVMember(comment.user.login);
           if (isAntVMemberResult) {
             firstMaintainerComment = comment;
-            console.log(`✅ 发现AntV成员 ${comment.user.login} 的回复作为首次响应`);
             break; // 找到第一个AntV成员的回复就停止
           }
         }
@@ -257,12 +256,11 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
       // 如果没有找到AntV成员的回复，使用第一个非创建者、非机器人的回复作为备用
       if (!firstMaintainerComment && candidateComments.length > 0) {
         firstMaintainerComment = candidateComments[0];
-        console.log(`⚠️ 未找到AntV成员回复，使用第一个维护者回复: ${firstMaintainerComment.user?.login}`);
       }
 
       // 检查timeline中的首次AntV成员标签添加事件
       let firstLabelEvent = null;
-      
+
       // 筛选标签添加事件
       const candidateLabelEvents = timelineResponse.data
         .filter((event: any) => {
@@ -286,8 +284,6 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
           const isAntVMemberResult = await isAntVMember(event.actor.login);
           if (isAntVMemberResult) {
             firstLabelEvent = event;
-            // @ts-expect-error type error
-            console.log(`✅ 发现AntV成员 ${event.actor.login} 添加标签作为首次响应`);
             break; // 找到第一个AntV成员的标签操作就停止
           }
         }
@@ -296,8 +292,6 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
       // 如果没有找到AntV成员的标签操作，使用第一个符合条件的标签事件作为备用
       if (!firstLabelEvent && candidateLabelEvents.length > 0) {
         firstLabelEvent = candidateLabelEvents[0];
-        // @ts-expect-error type error
-        console.log(`⚠️ 未找到AntV成员标签操作，使用第一个维护者标签: ${firstLabelEvent.actor?.login}`);
       }
 
       // 检查timeline中的首次PR关联事件
