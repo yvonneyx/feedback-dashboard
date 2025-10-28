@@ -1,14 +1,11 @@
 import { Octokit } from '@octokit/rest';
 import { NextResponse } from 'next/server';
 
-// 直接设置API超时常量，避免使用getConfig
-const API_TIMEOUT = 60000; // 将默认超时时间减少到60秒
-
-// 配置GitHub API客户端，增加重试和超时配置
+// 配置GitHub API客户端，不设置超时限制
 const octokit = new Octokit({
   auth: process.env.PERSONAL_GITHUB_TOKEN,
   request: {
-    timeout: API_TIMEOUT, // 设置请求超时时间
+    timeout: 0, // 不设置超时时间，直到所有issue处理完成
   },
 });
 
@@ -22,7 +19,7 @@ export const config = {
     externalResolver: true,
   },
   runtime: 'nodejs',
-  maxDuration: 180, // 将最大执行时间减少到180秒(3分钟)
+  maxDuration: 300, // 设置为5分钟（Vercel Pro计划最大值），确保有足够时间处理所有issues
 };
 
 export async function POST(request: Request) {
@@ -36,14 +33,15 @@ export async function POST(request: Request) {
     // 解析repo参数 (例如: 'antvis/g2')
     const [owner, repoName] = repo.split('/');
 
-    // 添加延迟，以避免GitHub API限制
-    console.log(`获取 ${repo} 的issues数据`);
+    console.log(`🔍 开始获取 ${repo} 的issues数据 (${startDate} ~ ${endDate})`);
 
     // 查询仓库中的issues
     const issues = await fetchAllIssues(owner, repoName, startDate, endDate, 50);
+    console.log(`📊 获取到 ${issues.length} 个issues，开始分析响应时间...`);
 
     // 分析每个issue的响应时间
     const analyzedIssues = await analyzeIssueResponseTimes(issues, owner, repoName);
+    console.log(`✅ 完成分析 ${analyzedIssues.length} 个issues的响应时间`);
 
     // 为每个issue添加仓库信息
     const issuesWithRepo = analyzedIssues.map(issue => ({
@@ -51,6 +49,7 @@ export async function POST(request: Request) {
       repo: repo, // 添加仓库信息
     }));
 
+    console.log(`🎉 ${repo} 数据处理完成，返回 ${issuesWithRepo.length} 个issues`);
     return NextResponse.json(issuesWithRepo);
   } catch (error) {
     console.error('获取GitHub issues失败:', error);
@@ -198,6 +197,10 @@ async function isAntVMember(username: string): Promise<boolean> {
 // 分析issues的首次响应时间 - 调整处理Search API返回的数据
 async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: string) {
   const analyzedIssues = [];
+  const totalIssues = issues.length;
+  let processedCount = 0;
+
+  console.log(`🔄 开始分析 ${totalIssues} 个issues的响应时间...`);
 
   for (const issue of issues) {
     // 从Search API返回的URL中提取issue number
@@ -209,6 +212,14 @@ async function analyzeIssueResponseTimes(issues: any[], owner: string, repo: str
     let responseTimeInHours = null;
 
     try {
+      // 每处理10个issue输出一次进度
+      processedCount++;
+      if (processedCount % 10 === 0 || processedCount === totalIssues) {
+        console.log(
+          `📈 进度: ${processedCount}/${totalIssues} (${Math.round((processedCount / totalIssues) * 100)}%)`
+        );
+      }
+
       // 获取issue的timeline事件，用于分析标签添加
       const timelineResponse = await fetchWithRetry(() =>
         octokit.issues.listEventsForTimeline({
