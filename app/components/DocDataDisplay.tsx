@@ -1,6 +1,6 @@
 'use client';
 
-import { feedbackStore, fetchFeedbackData } from '@/app/store/feedbackStore';
+import { feedbackStore, updateFeedbackResolveStatus } from '@/app/store/feedbackStore';
 import { DislikeOutlined, LikeOutlined } from '@ant-design/icons';
 import { Button, Empty, message, Spin, Table, Tag, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -67,7 +67,8 @@ export default function DocDataDisplay({ dataType }: DocDataDisplayProps) {
       })
       .then(data => {
         message.success(data.message || `已${setToResolved ? '解决' : '取消解决'}该反馈`);
-        fetchFeedbackData(); // 重新加载数据
+        // 使用懒更新：直接在本地更新状态，无需重新请求列表
+        updateFeedbackResolveStatus(objectId, setToResolved);
       })
       .catch(error => {
         message.error(`操作失败: ${error.message}`);

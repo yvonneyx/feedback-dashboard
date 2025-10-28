@@ -415,12 +415,23 @@ function formatRepoName(repo: string): string {
   return repoName ? repoName.toUpperCase() : repo;
 }
 
-// 触发数据获取（原有版本，保持向后兼容）
+// 懒更新:本地更新反馈状态,无需重新请求
+export function updateFeedbackResolveStatus(objectId: string, resolved: boolean) {
+  if (!feedbackStore.data) return;
+
+  const item = feedbackStore.data.find(item => item.objectId === objectId);
+  if (item) {
+    item.isResolved = resolved ? '1' : '0';
+    console.log(`✅ 本地更新反馈状态: ${objectId} -> ${resolved ? '已解决' : '未解决'}`);
+  }
+}
+
+// 触发数据获取(原有版本,保持向后兼容)
 export async function fetchFeedbackData() {
   return fetchFeedbackDataWithCancel();
 }
 
-// 获取GitHub Issue响应时间分析（原有版本，保持向后兼容）
+// 获取GitHub Issue响应时间分析(原有版本,保持向后兼容)
 export async function fetchIssueResponseTimes() {
   return fetchIssueResponseTimesWithCancel();
 }
