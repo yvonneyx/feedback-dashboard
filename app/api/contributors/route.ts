@@ -12,11 +12,10 @@ const octokit = new Octokit({
   },
 });
 
-// 设置 API 路由配置
-export const config = {
-  runtime: 'nodejs',
-  maxDuration: 600, // 增加到600秒(10分钟)
-};
+// App Router 路由配置
+// Vercel 计划限制：Hobby=10s, Pro=60s, Enterprise=900s
+export const maxDuration = 10; // 限制为 10 秒，确保 Hobby 计划可用
+export const dynamic = 'force-dynamic'; // 禁用缓存，确保每次都是动态请求
 
 // 定义贡献者角色
 type ContributorRole =

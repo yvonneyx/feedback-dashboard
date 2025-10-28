@@ -140,7 +140,7 @@ export async function fetchFeedbackDataWithCancel(signal?: AbortSignal) {
   }
 }
 
-// 支持取消的Issue响应时间分析
+// 支持取消的Issue响应时间分析 - 优化为单次请求，前端聚合
 export async function fetchIssueResponseTimesWithCancel(signal?: AbortSignal) {
   feedbackStore.issueAnalyticsLoading = true;
   feedbackStore.error = null;
@@ -161,7 +161,6 @@ export async function fetchIssueResponseTimesWithCancel(signal?: AbortSignal) {
 
     // 检查哪些仓库需要重新获取数据
     const reposNeedingFetch = reposToFetch.filter(repo => {
-      // 如果该仓库没有数据，或者数据为空数组，或者筛选条件已变化，则需要获取
       const hasNoData =
         !feedbackStore.productResponseTimes[repo] ||
         feedbackStore.productResponseTimes[repo].length === 0;
@@ -173,27 +172,25 @@ export async function fetchIssueResponseTimesWithCancel(signal?: AbortSignal) {
     console.log(`需要获取数据的仓库: ${reposNeedingFetch.length}/${reposToFetch.length}`, {
       全部仓库: reposToFetch,
       需要获取: reposNeedingFetch,
-      当前缓存键: currentCacheKey,
-      已有数据的仓库: reposToFetch.filter(
-        repo =>
-          feedbackStore.productResponseTimes[repo] &&
-          feedbackStore.productResponseTimes[repo].length > 0 &&
-          feedbackStore.dataCacheKeys[repo] === currentCacheKey
-      ),
     });
 
-    // 如果有需要获取的仓库，则并发请求
+    // 串行请求，避免并发超时，每个请求限制30条数据
     if (reposNeedingFetch.length > 0) {
-      const fetchPromises = reposNeedingFetch.map(repo => fetchProductDataWithCancel(repo, signal));
-      await Promise.all(fetchPromises);
+      for (const repo of reposNeedingFetch) {
+        if (signal?.aborted) {
+          console.log('⏭️ 请求被取消');
+          return;
+        }
 
-      // 更新缓存键
-      reposNeedingFetch.forEach(repo => {
+        await fetchProductDataSimple(repo, signal);
         feedbackStore.dataCacheKeys[repo] = currentCacheKey;
-      });
+
+        // 添加小延迟，避免GitHub API速率限制
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
 
-    // 清理不需要的仓库数据（如果用户取消选择了某些仓库）
+    // 清理不需要的仓库数据
     const reposToKeep = new Set(reposToFetch);
     Object.keys(feedbackStore.productResponseTimes).forEach(repo => {
       if (!reposToKeep.has(repo)) {
@@ -208,17 +205,19 @@ export async function fetchIssueResponseTimesWithCancel(signal?: AbortSignal) {
       throw new Error('AbortError');
     }
 
-    // 合并选中仓库的数据为总数据
+    // 合并选中仓库的数据
     const selectedIssues = reposToFetch.flatMap(
       repo => feedbackStore.productResponseTimes[repo] || []
     );
+
+    // API 已经完成了响应时间分析，直接使用
     feedbackStore.issueResponseTimes = selectedIssues;
 
-    console.log(`获取了${selectedIssues.length}个Issues，覆盖${reposToFetch.length}个仓库`);
+    console.log(`✅ 获取了${selectedIssues.length}个Issues，覆盖${reposToFetch.length}个仓库`);
   } catch (error: any) {
     if (error.name === 'AbortError' || error.message === 'AbortError') {
       console.log('⏭️ Issue数据请求被取消');
-      return; // 不设置错误状态
+      return;
     }
     feedbackStore.error = error instanceof Error ? error.message : '未知错误';
     console.error('获取GitHub Issue数据错误:', error);
@@ -227,9 +226,12 @@ export async function fetchIssueResponseTimesWithCancel(signal?: AbortSignal) {
   }
 }
 
-// 支持取消的单个仓库数据获取
-async function fetchProductDataWithCancel(repo: string, signal?: AbortSignal) {
+// 单个仓库数据获取 - 先获取基础数据，再在前端分析
+async function fetchProductDataSimple(repo: string, signal?: AbortSignal) {
   try {
+    console.log(`🔄 开始请求 ${repo} 的基础数据...`);
+
+    // 1. 获取基础issues数据（快速）
     const response = await fetch('/api/github-issues', {
       method: 'POST',
       headers: {
@@ -239,33 +241,53 @@ async function fetchProductDataWithCancel(repo: string, signal?: AbortSignal) {
         startDate: feedbackStore.filters.startDate,
         endDate: feedbackStore.filters.endDate,
         repo: repo,
+        limit: 30,
       }),
-      signal, // 传递AbortSignal
+      signal,
     });
 
+    console.log(`📡 ${repo} 响应状态: ${response.status}`);
+
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.error(`❌ ${repo} 请求失败:`, errorData);
       throw new Error(`获取${repo}数据失败: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const basicIssues = await response.json();
+    console.log(`📦 ${repo} 返回基础数据:`, basicIssues.length);
 
-    // 检查是否被取消
     if (signal?.aborted) {
       throw new Error('AbortError');
     }
 
-    // 存储到对应仓库的数据集
-    feedbackStore.productResponseTimes[repo] = data;
+    // 2. 在前端分析响应时间（使用完整逻辑）
+    console.log(`🔍 开始分析 ${repo} 的 ${basicIssues.length} 个issues...`);
 
-    console.log(`获取了${data.length}个${repo} Issues`);
-    return data;
+    // 动态导入分析器
+    const { analyzeIssuesWithDetails } = await import('../lib/issue-analyzer');
+
+    // 分析issues（这个函数会逐个获取详细信息并分析）
+    const analyzedIssues = await analyzeIssuesWithDetails(basicIssues, (current, total) => {
+      console.log(`📊 ${repo} 分析进度: ${current}/${total}`);
+    });
+
+    if (signal?.aborted) {
+      throw new Error('AbortError');
+    }
+
+    // 保存分析结果
+    feedbackStore.productResponseTimes[repo] = analyzedIssues;
+
+    console.log(`✅ ${repo} 分析完成: ${analyzedIssues.length} 个issues`);
+    return analyzedIssues;
   } catch (error: any) {
     if (error.name === 'AbortError' || error.message === 'AbortError') {
       console.log(`⏭️ ${repo}数据请求被取消`);
       return [];
     }
     const errorMessage = error instanceof Error ? error.message : '未知错误';
-    console.error(`获取${repo}数据错误:`, errorMessage);
+    console.error(`❌ 获取${repo}数据错误:`, errorMessage);
     feedbackStore.productResponseTimes[repo] = [];
     return [];
   }
