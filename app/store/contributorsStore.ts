@@ -95,37 +95,94 @@ export async function fetchContributors(retryCount = 0) {
 
     console.log(`开始获取贡献者数据，选择了${repos.length}个仓库`);
 
-    // 设置请求超时
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3分钟超时
+    // 并发请求每个仓库的贡献者数据
+    const contributorsPromises = repos.map(async repo => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 180000); // 3分钟超时
 
-    const response = await fetch('/api/contributors', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        startDate: contributorsStore.filters.startDate,
-        endDate: contributorsStore.filters.endDate,
-        repos: repos,
-      }),
-      signal: controller.signal,
+        const response = await fetch('/api/contributors', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            startDate: contributorsStore.filters.startDate,
+            endDate: contributorsStore.filters.endDate,
+            repo: repo, // 单个仓库
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          console.error(`获取仓库 ${repo} 的贡献者数据失败: ${response.status}`);
+          return [];
+        }
+
+        const data = (await response.json()) as Contributor[];
+        console.log(`获取到仓库 ${repo} 的 ${data.length} 个贡献者`);
+        return data;
+      } catch (error) {
+        console.error(`获取仓库 ${repo} 的贡献者数据错误:`, error);
+        return [];
+      }
     });
 
-    // 清除超时计时器
-    clearTimeout(timeoutId);
+    // 等待所有请求完成
+    const allRepoContributors = await Promise.all(contributorsPromises);
 
-    if (!response.ok) {
-      throw new Error(`获取贡献者数据失败: ${response.status} ${response.statusText}`);
-    }
+    // 合并所有仓库的贡献者数据
+    const contributorsMap = new Map<string, Contributor>();
 
-    const data = (await response.json()) as Contributor[];
-    contributorsStore.contributors = data;
+    allRepoContributors.forEach(repoContributors => {
+      repoContributors.forEach(contributor => {
+        if (contributorsMap.has(contributor.login)) {
+          // 合并已存在的贡献者数据
+          const existing = contributorsMap.get(contributor.login)!;
+          existing.contributions += contributor.contributions;
+          existing.pull_requests = (existing.pull_requests || 0) + (contributor.pull_requests || 0);
+
+          // 合并仓库列表（去重）
+          contributor.repos.forEach(repo => {
+            if (!existing.repos.includes(repo)) {
+              existing.repos.push(repo);
+            }
+          });
+
+          // 如果是维护者，更新维护者状态
+          if (contributor.is_maintainer && !existing.is_maintainer) {
+            existing.is_maintainer = true;
+          }
+
+          // 更新角色（取权限更高的）
+          const roleRank: Record<ContributorRole, number> = {
+            OWNER: 5,
+            MEMBER: 4,
+            COLLABORATOR: 3,
+            CONTRIBUTOR: 2,
+            FIRST_TIME_CONTRIBUTOR: 1,
+            FIRST_TIMER: 1,
+            NONE: 0,
+          };
+          if (roleRank[contributor.role] > roleRank[existing.role]) {
+            existing.role = contributor.role;
+          }
+        } else {
+          // 新贡献者
+          contributorsMap.set(contributor.login, { ...contributor });
+        }
+      });
+    });
+
+    const mergedContributors = Array.from(contributorsMap.values());
+    contributorsStore.contributors = mergedContributors;
 
     // 计算统计数据
-    calculateStats(data);
+    calculateStats(mergedContributors);
 
-    console.log(`获取了${data.length}个贡献者数据`);
+    console.log(`获取了${mergedContributors.length}个贡献者数据`);
   } catch (error: any) {
     // 如果是超时或网络错误，尝试重试
     if (
