@@ -227,38 +227,38 @@ async function fetchRepoMaintainers(owner: string, repo: string): Promise<string
 }
 
 // 获取仓库在指定时间段内的提交
-async function fetchCommits(owner: string, repo: string, startDate: string, endDate: string) {
-  const commits = [];
-  let page = 1;
-  let hasMorePages = true;
+// async function fetchCommits(owner: string, repo: string, startDate: string, endDate: string) {
+//   const commits = [];
+//   let page = 1;
+//   let hasMorePages = true;
 
-  try {
-    while (hasMorePages) {
-      const { data } = await fetchWithRetry(() =>
-        octokit.repos.listCommits({
-          owner,
-          repo,
-          since: startDate,
-          until: endDate,
-          per_page: 100,
-          page,
-        })
-      );
+//   try {
+//     while (hasMorePages) {
+//       const { data } = await fetchWithRetry(() =>
+//         octokit.repos.listCommits({
+//           owner,
+//           repo,
+//           since: startDate,
+//           until: endDate,
+//           per_page: 100,
+//           page,
+//         })
+//       );
 
-      if (data.length > 0) {
-        commits.push(...data);
-      }
+//       if (data.length > 0) {
+//         commits.push(...data);
+//       }
 
-      hasMorePages = data.length === 100;
-      page++;
-    }
+//       hasMorePages = data.length === 100;
+//       page++;
+//     }
 
-    return commits;
-  } catch (error) {
-    console.error(`获取仓库 ${owner}/${repo} 的提交失败:`, error);
-    return [];
-  }
-}
+//     return commits;
+//   } catch (error) {
+//     console.error(`获取仓库 ${owner}/${repo} 的提交失败:`, error);
+//     return [];
+//   }
+// }
 
 // 获取仓库在指定时间段内的PR
 async function fetchPullRequests(owner: string, repo: string, startDate: string, endDate: string) {
