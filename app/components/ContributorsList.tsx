@@ -118,6 +118,7 @@ export default function ContributorsList() {
         { text: 'L7', value: 'antvis/l7' },
         { text: 'AVA', value: 'antvis/AVA' },
         { text: 'Charts', value: 'ant-design/ant-design-charts' },
+        { label: 'T8', value: 'antvis/T8' },
       ],
       onFilter: (value: string, record: Contributor) => record.repos.includes(value),
     },

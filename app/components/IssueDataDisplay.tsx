@@ -80,6 +80,7 @@ export default function IssueDataDisplay({ dataType }: IssueDataDisplayProps) {
           { text: 'L7', value: 'l7' },
           { text: 'AVA', value: 'ava' },
           { text: 'Charts', value: 'charts' },
+          { text: 'T8', value: 't8' },
         ],
         onFilter: (value: any, record: any) =>
           getRepoFromUrl(record.html_url).toLowerCase() === value,

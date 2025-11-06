@@ -35,6 +35,7 @@ export const ALL_PRODUCTS = [
   { label: 'L7', value: 'antvis/l7' },
   { label: 'AVA', value: 'antvis/AVA' },
   { label: 'Charts', value: 'ant-design/ant-design-charts' },
+  { label: 'T8', value: 'antvis/T8' },
 ];
 
 // 定义各仓库指标数据接口

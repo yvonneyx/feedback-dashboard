@@ -125,6 +125,7 @@ function getRepoColor(repo: string): string {
     G: '#2f54eb',
     AVA: '#eb2f96',
     CHARTS: '#faad14',
+    T8: '#a0d911',
   };
 
   return colorMap[repo] || '#8c8c8c';
