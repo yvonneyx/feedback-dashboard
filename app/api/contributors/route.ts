@@ -85,42 +85,42 @@ async function fetchRepoContributors(
   const maintainersSet = new Set(maintainers);
   console.log(`获取到 ${repo} 的维护者: ${maintainers.length}人`);
 
-  // 获取仓库提交记录
-  console.log(`获取 ${repo} 的提交记录...`);
-  const commits = await fetchCommits(owner, repoName, startDate, endDate);
-  console.log(`获取到 ${repo} 的提交: ${commits.length}条`);
+  // // 获取仓库提交记录
+  // console.log(`获取 ${repo} 的提交记录...`);
+  // const commits = await fetchCommits(owner, repoName, startDate, endDate);
+  // console.log(`获取到 ${repo} 的提交: ${commits.length}条`);
 
-  // 提取贡献者信息
-  for (const commit of commits) {
-    if (!commit.author || !commit.author.login) continue;
+  // // 提取贡献者信息
+  // for (const commit of commits) {
+  //   if (!commit.author || !commit.author.login) continue;
 
-    const login = commit.author.login;
+  //   const login = commit.author.login;
 
-    // 过滤掉 GitHub Apps (html_url 包含 /apps/)
-    if (commit.author.html_url?.includes('/apps/')) {
-      continue;
-    }
+  //   // 过滤掉 GitHub Apps (html_url 包含 /apps/)
+  //   if (commit.author.html_url?.includes('/apps/')) {
+  //     continue;
+  //   }
 
-    const isMaintainer = maintainersSet.has(login);
+  //   const isMaintainer = maintainersSet.has(login);
 
-    // 更新或创建贡献者记录
-    if (contributorsMap.has(login)) {
-      const contributor = contributorsMap.get(login)!;
-      contributor.contributions += 1;
-    } else {
-      contributorsMap.set(login, {
-        login: login,
-        id: commit.author.id,
-        avatar_url: commit.author.avatar_url,
-        html_url: commit.author.html_url,
-        contributions: 1,
-        role: 'CONTRIBUTOR', // 默认角色
-        repos: [repo],
-        is_maintainer: isMaintainer,
-        pull_requests: 0, // 初始化PR数量为0
-      });
-    }
-  }
+  //   // 更新或创建贡献者记录
+  //   if (contributorsMap.has(login)) {
+  //     const contributor = contributorsMap.get(login)!;
+  //     contributor.contributions += 1;
+  //   } else {
+  //     contributorsMap.set(login, {
+  //       login: login,
+  //       id: commit.author.id,
+  //       avatar_url: commit.author.avatar_url,
+  //       html_url: commit.author.html_url,
+  //       contributions: 1,
+  //       role: 'CONTRIBUTOR', // 默认角色
+  //       repos: [repo],
+  //       is_maintainer: isMaintainer,
+  //       pull_requests: 0, // 初始化PR数量为0
+  //     });
+  //   }
+  // }
 
   // 通过PR获取更详细的贡献者信息
   console.log(`获取 ${repo} 的PR记录...`);
