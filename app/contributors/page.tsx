@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import { useEffect } from 'react';
 import { useSnapshot } from 'valtio';
 import ContributorsFilter from '../components/ContributorsFilter';
+import ContributorsGraph from '../components/ContributorsGraph';
 import ContributorsList from '../components/ContributorsList';
 import ContributorsStats from '../components/ContributorsStats';
 import { contributorsStore, fetchContributors } from '../store/contributorsStore';
@@ -140,6 +141,7 @@ export default function ContributorsPage() {
           <div>
             <ContributorsList />
           </div>
+          <ContributorsGraph />
         </Card>
 
         <footer className="mt-8 mb-6 text-center text-gray-500 text-xs">
