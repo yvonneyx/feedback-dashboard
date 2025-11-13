@@ -10,7 +10,7 @@ type NodeItem = any;
 const getNodeSize = (value: number, minValue: number, maxValue: number): number => {
   const range = maxValue - minValue;
   const normalized = (value - minValue) / range;
-  return 30 + normalized * 50;
+  return 50 + normalized * 60; // 最小50px，最大110px
 };
 
 export default function ContributorsGraph() {
@@ -56,19 +56,22 @@ export default function ContributorsGraph() {
         type: 'circle',
         style: {
           size: (d: NodeItem) => getNodeSize(d.pull_requests, minValue, maxValue),
-          stroke: '#fff',
+          stroke: 'l(0) 0:#5B8FF9 0.5:#F759AB 1:#FFD666',
           iconSrc: (d: NodeItem) => d.avatar_url,
-          iconWidth: (d: NodeItem) => getNodeSize(d.pull_requests, minValue, maxValue),
-          iconHeight: (d: NodeItem) => getNodeSize(d.pull_requests, minValue, maxValue),
-          iconRadius: (d: NodeItem) => getNodeSize(d.pull_requests, minValue, maxValue) / 2,
+          iconWidth: (d: NodeItem) => getNodeSize(d.pull_requests, minValue, maxValue) - 8,
+          iconHeight: (d: NodeItem) => getNodeSize(d.pull_requests, minValue, maxValue) - 8,
+          iconRadius: (d: NodeItem) => (getNodeSize(d.pull_requests, minValue, maxValue) - 8) / 2,
           radius: (d: NodeItem) => getNodeSize(d.pull_requests, minValue, maxValue) / 2,
           labelText: (d: NodeItem) => d.login,
-          fill: '#02C9C9',
-          shadowBlur: 10,
-          shadowColor: '#02C9C9',
+          labelFill: '#ffffff',
+          labelFontSize: 12,
+          labelFontWeight: 500,
+          fill: '#1a1a2e',
+          shadowBlur: 20,
+          shadowColor: '#5B8FF9',
           shadowOffsetX: 0,
           shadowOffsetY: 0,
-          lineWidth: 1,
+          lineWidth: 3,
         },
       },
       behaviors: ['drag-canvas', 'hover-activate'],
@@ -100,7 +103,23 @@ export default function ContributorsGraph() {
       >
         <h3 className="text-lg font-medium">贡献者图可视化</h3>
       </div>
-      <div ref={containerRef} className="graph-container" />
+      <div
+        ref={containerRef}
+        className="graph-container"
+        style={{
+          background: `
+            radial-gradient(ellipse at 20% 30%, rgba(91, 143, 249, 0.25) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 70%, rgba(247, 89, 171, 0.25) 0%, transparent 50%),
+            radial-gradient(ellipse at 50% 50%, rgba(255, 214, 102, 0.2) 0%, transparent 50%),
+            linear-gradient(135deg, #1a1a2e 0%, #2d2d44 50%, #1f1f38 100%)
+          `,
+          borderRadius: '8px',
+          minHeight: '800px',
+          position: 'relative' as const,
+          overflow: 'hidden',
+          boxShadow: 'inset 0 0 100px rgba(91, 143, 249, 0.15)',
+        }}
+      />
     </div>
   );
 }
