@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { startDate, endDate, repo, limit = 30 } = body;
+    const { startDate, endDate, repo, limit = 500 } = body;
 
     console.log('📥 收到请求参数:', { startDate, endDate, repo, limit });
 
@@ -58,13 +58,13 @@ export async function POST(request: Request) {
   }
 }
 
-// 简化的issues获取函数 - 只获取基础数据，不做复杂分析
+// 分页获取所有issues - 不设上限
 async function fetchIssuesSimple(
   owner: string,
   repo: string,
   startDate: string,
   endDate: string,
-  limit: number = 30
+  limit: number = 500
 ) {
   const startDateTime = new Date(startDate);
   const endDateTime = new Date(endDate);
@@ -75,26 +75,50 @@ async function fetchIssuesSimple(
 
   const query = `repo:${owner}/${repo} is:issue created:${formattedStartDate}..${formattedEndDate}`;
 
-  console.log(`执行查询: ${query}, 限制: ${limit} 条`);
+  console.log(`执行查询: ${query}, 将分页获取所有数据`);
 
   try {
-    const searchResponse = await octokit.search.issuesAndPullRequests({
+    // 先获取第一页以了解总数
+    const firstPageResponse = await octokit.search.issuesAndPullRequests({
       q: query,
-      per_page: Math.min(limit, 100),
+      per_page: 100,
       page: 1,
       sort: 'created',
       order: 'desc',
     });
 
-    console.log(
-      `获取到 ${searchResponse.data.items.length} 个issues，总计: ${searchResponse.data.total_count}`
-    );
+    const totalCount = firstPageResponse.data.total_count;
+    console.log(`总共有 ${totalCount} 个issues，开始分页获取...`);
 
-    if (searchResponse.data.items.length === 0) {
+    if (totalCount === 0) {
       console.warn(`⚠️ 查询结果为空: ${query}`);
+      return [];
     }
 
-    return searchResponse.data.items;
+    let allIssues = [...firstPageResponse.data.items];
+    const totalPages = Math.ceil(totalCount / 100);
+
+    // 如果有多页，继续获取剩余页面
+    if (totalPages > 1) {
+      for (let page = 2; page <= totalPages && page <= 10; page++) {
+        // 最多10页，即1000条数据
+        console.log(`获取第 ${page}/${Math.min(totalPages, 10)} 页...`);
+        const response = await octokit.search.issuesAndPullRequests({
+          q: query,
+          per_page: 100,
+          page: page,
+          sort: 'created',
+          order: 'desc',
+        });
+        allIssues = [...allIssues, ...response.data.items];
+
+        // 添加延迟避免API限制
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    console.log(`✅ 成功获取 ${allIssues.length}/${totalCount} 个issues`);
+    return allIssues;
   } catch (error) {
     console.error('获取issues失败:', error);
     throw error;

@@ -20,6 +20,7 @@ import { useEffect, useMemo } from 'react';
 import { useSnapshot } from 'valtio';
 import DocDetails from './DocDetails';
 import IssueDetails from './IssueDetails';
+import MonthlyIssueStats from './MonthlyIssueStats';
 import PRStats from './PRStats';
 
 interface DashboardMetrics {
@@ -744,6 +745,23 @@ export default function CommunityDashboard() {
             children: (
               <div className="p-6">
                 <IssueDetails />
+              </div>
+            ),
+          },
+          {
+            key: 'monthly-issues',
+            label: (
+              <div className="flex items-center px-2">
+                <ClockCircleOutlined className="text-slate-600 mr-2" />
+                <span className="font-medium text-slate-700">按月统计</span>
+              </div>
+            ),
+            children: (
+              <div className="p-6">
+                <MonthlyIssueStats
+                  startDate={feedbackData.filters.startDate}
+                  endDate={feedbackData.filters.endDate}
+                />
               </div>
             ),
           },

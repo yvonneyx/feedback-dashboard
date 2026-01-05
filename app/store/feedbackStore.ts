@@ -242,7 +242,7 @@ async function fetchProductDataSimple(repo: string, signal?: AbortSignal) {
         startDate: feedbackStore.filters.startDate,
         endDate: feedbackStore.filters.endDate,
         repo: repo,
-        limit: 30,
+        limit: 500,
       }),
       signal,
     });

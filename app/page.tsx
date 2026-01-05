@@ -653,6 +653,68 @@ function HomeContent() {
     }
   };
 
+  // 快捷选择2025下半年 (7月1日 - 12月31日)
+  const handleSecondHalfYear = async () => {
+    const startDate = dayjs('2025-07-01');
+    const endDate = dayjs('2025-12-31');
+    const newDateRange: [Dayjs, Dayjs] = [startDate, endDate];
+
+    setDateRange(newDateRange);
+    updateUrlParams(startDate, endDate, selectedRepos);
+
+    // 更新store筛选条件
+    updateDateRange(startDate.toISOString(), endDate.toISOString());
+
+    // 更新store筛选条件
+    updateDateRange(startDate.toISOString(), endDate.toISOString());
+
+    // 确定PR查询的仓库列表
+    const prRepos = selectedRepos.length > 0 ? selectedRepos : ALL_PRODUCTS.map(p => p.value);
+
+    try {
+      setError(null);
+
+      // 检查网络连接
+      if (!navigator.onLine) {
+        throw new Error('网络连接已断开，请检查网络后重试');
+      }
+
+      // 并行触发三个服务的数据加载
+      console.log('🔄 开始并行获取下半年数据...');
+      const results = await Promise.allSettled([
+        fetchFeedbackData(),
+        fetchIssueResponseTimes(),
+        fetchPRData({
+          repos: prRepos,
+          startDate: startDate.format('YYYY-MM-DD'),
+          endDate: endDate.format('YYYY-MM-DD'),
+        }),
+      ]);
+
+      // 检查执行结果并记录日志
+      const [feedbackResult, issueResult, prResult] = results;
+
+      console.log('📊 下半年数据获取结果:');
+      console.log(
+        '- 反馈数据:',
+        feedbackResult.status === 'fulfilled' ? '✅ 成功' : `❌ 失败: ${feedbackResult.reason}`
+      );
+      console.log(
+        '- Issue数据:',
+        issueResult.status === 'fulfilled' ? '✅ 成功' : `❌ 失败: ${issueResult.reason}`
+      );
+      console.log(
+        '- PR数据:',
+        prResult.status === 'fulfilled' ? '✅ 成功' : `❌ 失败: ${prResult.reason}`
+      );
+
+      console.log('✅ 下半年所有数据获取完成');
+    } catch (error) {
+      console.error('❌ 获取下半年数据失败:', error);
+      // 错误会由各个store自行处理和显示
+    }
+  };
+
   // 清除缓存并重新获取数据
   const handleClearCacheAndRefresh = async () => {
     try {
@@ -767,6 +829,14 @@ function HomeContent() {
                         className="text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-100"
                       >
                         近一个月
+                      </Button>
+                      <Button
+                        size="small"
+                        type="text"
+                        onClick={handleSecondHalfYear}
+                        className="text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                      >
+                        2025下半年
                       </Button>
                     </div>
                   </Space>
