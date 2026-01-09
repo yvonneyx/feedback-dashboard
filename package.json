@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@ant-design/plots": "^2.4.0",
+    "@antv/g6": "^5.0.50",
     "@octokit/rest": "^21.1.1",
     "antd": "^5.24.3",
     "dayjs": "^1.11.13",

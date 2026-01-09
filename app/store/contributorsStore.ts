@@ -22,7 +22,7 @@ export interface Contributor {
   role: ContributorRole;
   repos: string[]; // 参与的仓库列表
   is_maintainer: boolean;
-  pull_requests?: number; // 提交的PR数量
+  pull_requests: number; // 提交的PR数量
 }
 
 // 定义全局状态
@@ -33,7 +33,7 @@ interface ContributorsState {
     repos: string[];
   };
   loading: boolean;
-  contributors: Contributor[] | null;
+  contributors: Contributor[];
   error: string | null;
   maintainerStats: {
     maintainers: number;
@@ -57,7 +57,7 @@ export const contributorsStore = proxy<ContributorsState>({
     repos: [],
   },
   loading: false,
-  contributors: null,
+  contributors: [],
   error: null,
   maintainerStats: {
     maintainers: 0,

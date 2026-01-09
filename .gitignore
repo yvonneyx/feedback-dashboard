@@ -47,3 +47,4 @@ next-env.d.ts
 
 # 环境变量文件
 .env*.local
+pnpm-lock.yaml
